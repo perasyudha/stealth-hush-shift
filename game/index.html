@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hush Shift — the gold vault key</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #070a0f; }
+  body {
+    display: grid;
+    place-items: center;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  .stage { position: relative; }
+  canvas {
+    display: block;
+    border-radius: 10px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px #1d2530;
+  }
+  .plate {
+    position: absolute;
+    left: 16px;
+    top: -22px;
+    font: 600 11px ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.22em;
+    color: #5d6b7a;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="plate">HUSH SHIFT · one floor · three ways to the gold vault key</div>
+    <canvas id="floor" width="1280" height="800" aria-label="Hush Shift stealth floor"></canvas>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
