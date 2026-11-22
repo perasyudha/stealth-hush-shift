@@ -469,9 +469,21 @@ function stencil(ctx, text, x, y, tint, size = 11) {
   ctx.restore();
 }
 
-// Two small staging clusters fill the bare start corner: a loaded pallet and cartons by
-// the top wall, a cable drum and bucket by the aisle. Decoration only, so nothing blocks.
+let stagingCanvas = null;
+
+// The clusters never move, so they are drawn once into their own layer and blitted.
+// Decoration only: nothing here blocks a walk or a sight line.
 function paintStagingProps(ctx) {
+  if (!stagingCanvas) {
+    stagingCanvas = document.createElement('canvas');
+    stagingCanvas.width = VIEW_W;
+    stagingCanvas.height = VIEW_H;
+    drawStagingProps(stagingCanvas.getContext('2d'));
+  }
+  ctx.drawImage(stagingCanvas, 0, 0);
+}
+
+function drawStagingProps(ctx) {
   ctx.save();
 
   // Cluster one: pallet of cartons left by the start gap.
