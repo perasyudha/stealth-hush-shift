@@ -47,8 +47,8 @@ export function applyPose(world, pose) {
     world.noise = 0.7;
     world.awareness = 14;
     world.hidden = true;
-    world.player.x = 6.3;
-    world.player.y = 8.45;
+    world.player.x = 6.55;
+    world.player.y = 7.6;
     world.player.angle = 1.2;
     place(a, 22.5, 2.5, 3.3);
     place(b, 6.5, 17.5, 0.05);
