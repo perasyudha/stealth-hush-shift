@@ -5,7 +5,7 @@ import { bindInput, readMove } from './input.js';
 import { updatePlayer } from './player.js';
 import { updateGuards } from './patrol.js';
 import { updateVision } from './vision.js';
-import { paintFloor, paintPatrolPaths, paintProps, paintLightmap, paintVignette } from './art.js';
+import { paintFloor, paintPatrolPaths, paintProps, paintLamps, paintLightmap, paintVignette } from './art.js';
 import {
   drawCamera,
   drawCameraCone,
@@ -85,6 +85,7 @@ function draw() {
   paintPatrolPaths(ctx);
   paintProps(ctx, world);
   paintLightmap(ctx, world);
+  paintLamps(ctx, world);
 
   drawTrail(ctx, world);
   drawCameraCone(ctx, world.camera);

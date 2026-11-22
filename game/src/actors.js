@@ -244,17 +244,38 @@ export function drawPlayer(ctx, world) {
   const x = p.x * TILE;
   const y = p.y * TILE;
   const crouched = world.stance === 'crouch' || world.stance === 'vent';
+  const lit = world.lit;
+  // Visibility radius: how far away the guards can pick you out. In a lamp pool it triples
+  // and the ring turns amber, so the danger is drawn on the floor, not only in the meter.
+  const visR = crouched ? 27 : 33;
   ctx.save();
 
+  ctx.strokeStyle = lit ? 'rgba(240,178,86,0.52)' : 'rgba(198,216,236,0.15)';
+  ctx.setLineDash(lit ? [7, 6] : [2, 7]);
+  ctx.lineWidth = lit ? 1.5 : 1;
+  ctx.beginPath();
+  ctx.arc(x, y, lit ? visR * 3 : visR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
   // The player carries the lamp: a small pool of light, so the eye lands here first.
-  const pool = ctx.createRadialGradient(x, y, 2, x, y, crouched ? 28 : 34);
-  pool.addColorStop(0, 'rgba(232,244,255,0.42)');
-  pool.addColorStop(0.4, 'rgba(200,222,248,0.19)');
-  pool.addColorStop(0.74, 'rgba(172,202,234,0.07)');
-  pool.addColorStop(1, 'rgba(160,190,225,0)');
+  const poolR = crouched ? 28 : 34;
+  const pool = ctx.createRadialGradient(x, y, 2, x, y, poolR);
+  if (lit) {
+    pool.addColorStop(0, 'rgba(255,214,158,0.46)');
+    pool.addColorStop(0.4, 'rgba(246,188,118,0.2)');
+    pool.addColorStop(0.74, 'rgba(226,168,104,0.07)');
+    pool.addColorStop(1, 'rgba(214,156,96,0)');
+  } else {
+    pool.addColorStop(0, 'rgba(232,244,255,0.42)');
+    pool.addColorStop(0.4, 'rgba(200,222,248,0.19)');
+    pool.addColorStop(0.74, 'rgba(172,202,234,0.07)');
+    pool.addColorStop(1, 'rgba(160,190,225,0)');
+  }
   ctx.fillStyle = pool;
   ctx.beginPath();
-  ctx.arc(x, y, crouched ? 28 : 34, 0, Math.PI * 2);
+  ctx.arc(x, y, poolR, 0, Math.PI * 2);
   ctx.fill();
 
   if (world.stance === 'sprint') {
@@ -306,6 +327,13 @@ export function drawPlayer(ctx, world) {
     ctx.font = '700 10px ui-monospace, Menlo, monospace';
     ctx.textAlign = 'center';
     ctx.fillText('HIDDEN', x, y - rad - 26);
+  }
+
+  if (lit && !world.hidden) {
+    ctx.fillStyle = 'rgba(250,196,118,0.95)';
+    ctx.font = '700 10px ui-monospace, Menlo, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('LIT · SEEN ×3', x, y - rad - 26);
   }
   ctx.restore();
 }

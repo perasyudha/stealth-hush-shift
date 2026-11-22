@@ -1,30 +1,47 @@
 // Sight and awareness: who sees you, how fast the meter fills, and the near-miss rule.
-import { AWARE } from './config.js';
+import { AWARE, LIGHT } from './config.js';
 import { angleDelta, coverBetween, lineBlocked, wallBlocked } from './level.js';
 
 const STARE = AWARE.searchAt;
 
+// The second stealth axis: a lamp pool makes you visible from three times as far.
+// Darkness is the safe state, so the floor is read as light and shadow, not just cover.
+export function playerLit(world) {
+  const p = world.player;
+  for (const lamp of world.lamps) {
+    if (Math.hypot(p.x - lamp.x, p.y - lamp.y) <= LIGHT.radius) return true;
+  }
+  return false;
+}
+
+// Reach while standing in light: the same cone, three times as long.
+export function reachScale(world) {
+  return world.lit ? LIGHT.reach : 1;
+}
+
 function guardExposure(world, g) {
   const p = world.player;
+  const reach = g.range * reachScale(world);
   const span = Math.hypot(p.x - g.x, p.y - g.y);
-  if (span > g.range) return 0;
+  if (span > reach) return 0;
   const bearing = Math.atan2(p.y - g.y, p.x - g.x);
   if (angleDelta(g.angle, bearing) > (g.fov * Math.PI) / 360) return 0;
   if (lineBlocked(g.x, g.y, p.x, p.y)) return 0;
   // Behind a crate with the hood down: the guard's line never reaches you.
   if (world.stance === 'crouch' && coverBetween(p.x, p.y, g.x, g.y)) return 0;
-  return Math.max(0.14, 1 - span / (g.range * 1.1));
+  return Math.max(0.14, 1 - span / (reach * 1.1));
 }
 
 function cameraExposure(world) {
   const cam = world.camera;
   const p = world.player;
+  const reach = cam.range * reachScale(world);
   const span = Math.hypot(p.x - cam.x, p.y - cam.y);
-  if (span > cam.range) return 0;
+  if (span > reach) return 0;
   const bearing = Math.atan2(p.y - cam.y, p.x - cam.x);
   if (angleDelta(cam.angle, bearing) > (cam.fov * Math.PI) / 360) return 0;
   if (wallBlocked(cam.x, cam.y, p.x, p.y)) return 0;
-  return Math.max(0.18, 1 - span / (cam.range * 1.05));
+  return Math.max(0.18, 1 - span / (reach * 1.05));
 }
 
 export function closeToCover(world) {
@@ -39,6 +56,9 @@ export function updateVision(world, dt) {
   const before = world.awareness;
   let exposure = 0;
   let watcher = null;
+
+  // Light is decided before anyone looks: a lit player is a longer target.
+  world.lit = playerLit(world);
 
   for (const g of world.guards) {
     const seen = guardExposure(world, g);

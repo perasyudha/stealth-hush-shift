@@ -1,5 +1,5 @@
 // One mutable world: player, patrols, ceiling camera, awareness and route counters.
-import { CAMERA, GUARDS } from './config.js';
+import { CAMERA, GUARDS, LAMPS } from './config.js';
 import { glyphTiles, KEY, EXIT, START } from './level.js';
 
 function makeGuard(def) {
@@ -49,6 +49,8 @@ export function createState() {
     },
     guards: GUARDS.map(makeGuard),
     camera: { ...CAMERA, angle: CAMERA.phase, sees: false, alert: 0 },
+    lamps: LAMPS.map((lamp) => ({ ...lamp })),
+    lit: false,
     keyTile: { x: key.x + 0.5, y: key.y + 0.5 },
     exitTile: { x: exit.x + 0.5, y: exit.y + 0.5 },
     routeMeters: { front: 0, service: 0, vent: 0 },

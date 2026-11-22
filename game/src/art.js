@@ -1,6 +1,6 @@
 // The still parts of the floor: tiles, walls, crates, desks, pillars, vent grates,
 // the gold key, the teal exit door, door jambs, stencils, and the night light map.
-import { COLS, GUARDS, ROWS, TILE, VIEW_H, VIEW_W, ROUTES } from './config.js';
+import { COLS, GUARDS, LIGHT, ROWS, TILE, VIEW_H, VIEW_W, ROUTES } from './config.js';
 import { DOORS, MAP } from './config.js';
 import { isCover, isVent, isWall } from './level.js';
 
@@ -606,6 +606,47 @@ export function paintProps(ctx, world) {
 
 let lightCanvas = null;
 
+// The three lamp pools, drawn after the light map so the warm circles sit on top of the
+// dark instead of being swallowed by it. A pool is a place you can be seen, not a place
+// to rest: the rim is the exact edge the guard's reach follows.
+export function paintLamps(ctx, world) {
+  ctx.save();
+  for (const lamp of world.lamps) {
+    const cx = lamp.x * TILE;
+    const cy = lamp.y * TILE;
+    const pool = LIGHT.radius * TILE * 1.3;
+    const grad = ctx.createRadialGradient(cx, cy, 3, cx, cy, pool);
+    grad.addColorStop(0, 'rgba(255,201,130,0.245)');
+    grad.addColorStop(0.4, 'rgba(255,186,110,0.135)');
+    grad.addColorStop(0.72, 'rgba(246,170,96,0.055)');
+    grad.addColorStop(1, 'rgba(240,164,92,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pool, 0, Math.PI * 2);
+    ctx.fill();
+
+    // The floor plate the lamp throws: a hairline dashed rim at the lighting radius.
+    ctx.strokeStyle = 'rgba(255,208,148,0.17)';
+    ctx.setLineDash([3, 7]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, LIGHT.radius * TILE, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // The fixture itself: a small warm disc, brighter than the pool it throws.
+    ctx.fillStyle = 'rgba(255,216,166,0.72)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,214,160,0.28)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 export function paintLightmap(ctx, world) {
   if (!lightCanvas) {
     lightCanvas = document.createElement('canvas');
@@ -636,6 +677,8 @@ export function paintLightmap(ctx, world) {
   hole(world.exitTile.x, world.exitTile.y, 74, 0.85);
   for (const g of world.guards) hole(g.x, g.y, 74, 0.4);
   hole(world.camera.x, world.camera.y, 56, 0.3);
+  // Lamps lift the night overlay too, so the pool reads as light on the floor, not paint.
+  for (const lamp of world.lamps) hole(lamp.x, lamp.y, LIGHT.radius * TILE * 1.25, 0.42);
 
   ctx.drawImage(lightCanvas, 0, 0);
   ctx.globalCompositeOperation = 'source-over';

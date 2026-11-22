@@ -100,6 +100,17 @@ export const CAMERA = {
   phase: 0.6,
 };
 
+// Lamps: three fixed warm pools on the floor. Standing in one lights you up: every guard's
+// reach triples, so the dark is the only quiet place to stand. Tile units.
+export const LAMPS = [
+  { x: 9.5, y: 9.2 },
+  { x: 20.5, y: 2.4 },
+  { x: 22.5, y: 16.5 },
+];
+
+// radius: pool that lights the player (tiles). reach: detection multiplier while lit.
+export const LIGHT = { radius: 2.2, reach: 3 };
+
 export const SPEED = { walk: 4.3, sprint: 8.4, crouch: 1.55, vent: 1.85 };
 export const NOISE = { walk: 1.9, sprint: 4.8, crouch: 0.7, vent: 0.45 };
 export const STANCE_LABEL = {
