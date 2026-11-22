@@ -326,7 +326,8 @@ export function drawPlayer(ctx, world) {
     ctx.fillStyle = 'rgba(196,255,238,0.9)';
     ctx.font = '700 10px ui-monospace, Menlo, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('HIDDEN', x, y - rad - 26);
+    // On the annotated still the callout says HIDDEN in full, so the tag steps aside.
+    if (!world.callouts) ctx.fillText('HIDDEN', x, y - rad - 26);
   }
 
   if (lit && !world.hidden) {

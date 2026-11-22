@@ -57,6 +57,7 @@ export function createState() {
     trail: [],
     trailTimer: 0,
     shot: null,
+    callouts: false,
   };
 }
 

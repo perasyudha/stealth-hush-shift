@@ -28,16 +28,18 @@ function cover(world) {
   world.awareness = 21;
   world.nearMisses = 0;
   world.hidden = true;
-  // Crouched in the desk's shadow: guard C's cone runs west and dies on the desk tile
-  // in front of the player, while the ceiling camera hatches straight over it.
-  world.player.x = 16.5;
-  world.player.y = 7.5;
+  // Crouched in the crate's shadow: guard C's cone runs west and dies on the crate tile
+  // in front of the player, while the ceiling camera hatches straight over the pillar.
+  world.player.x = 11.5;
+  world.player.y = 8.0;
   world.player.angle = 3.1;
   place(a, 19.5, 2.5, 3.25);
   place(b, 13.5, 16.5, -0.12);
-  place(c, 20.5, 7.5, Math.PI);
+  place(c, 15.5, 8.5, Math.PI);
   world.camera.angle = 2.55;
   world.routeMeters.front = 14;
+  // Three leader-line notes, drawn only on this pose, so the still explains itself.
+  world.callouts = true;
 }
 
 function hide(world) {

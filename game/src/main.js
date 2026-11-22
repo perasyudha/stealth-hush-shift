@@ -17,6 +17,7 @@ import {
   drawPlayer,
 } from './actors.js';
 import { drawHud } from './hud.js';
+import { drawCallouts } from './callouts.js';
 import {
   alarmTick,
   caughtStinger,
@@ -100,6 +101,7 @@ function draw() {
   drawHud(ctx, world);
   paintVignette(ctx);
   drawEffects(ctx, world);
+  drawCallouts(ctx, world);
 }
 
 let last = performance.now();
