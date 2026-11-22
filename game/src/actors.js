@@ -27,22 +27,52 @@ export function drawTrail(ctx, world) {
   ctx.restore();
 }
 
+// A stacked, offset ellipse shadow: the guard sits above the floor instead of on it.
+function dropShadow(ctx, x, y, rx, ry, strength = 0.3) {
+  ctx.save();
+  for (let ring = 3; ring >= 0; ring--) {
+    const grow = ring * 2.8;
+    ctx.fillStyle = `rgba(0,0,0,${strength * (0.2 + ring * 0.08)})`;
+    ctx.beginPath();
+    ctx.ellipse(x + 2, y + 5 + ring * 0.7, rx + grow, ry + grow * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 export function drawGuardCone(ctx, g) {
   const pts = conePolygon(g.x, g.y, g.angle, g.fov, g.range);
   const hot = g.alert > 0.45;
   const cx = g.x * TILE;
   const cy = g.y * TILE;
-  const grad = ctx.createRadialGradient(cx, cy, 8, cx, cy, g.range * TILE);
+  const reach = g.range * TILE;
   const base = hot ? '238,91,65' : '255,193,124';
-  grad.addColorStop(0, `rgba(${base},${hot ? 0.4 : 0.3})`);
-  grad.addColorStop(0.55, `rgba(${base},${hot ? 0.2 : 0.13})`);
-  grad.addColorStop(1, `rgba(${base},0.015)`);
+
+  // Bright at the guard's shoulders, gone at the far edge: distance is the depth cue.
+  const grad = ctx.createRadialGradient(cx, cy, 6, cx, cy, reach);
+  grad.addColorStop(0, `rgba(${base},${hot ? 0.46 : 0.38})`);
+  grad.addColorStop(0.22, `rgba(${base},${hot ? 0.32 : 0.24})`);
+  grad.addColorStop(0.55, `rgba(${base},${hot ? 0.15 : 0.1})`);
+  grad.addColorStop(1, `rgba(${base},0)`);
 
   ctx.save();
   conePath(ctx, pts);
+  ctx.clip();
   ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.strokeStyle = hot ? 'rgba(238,91,65,0.75)' : 'rgba(255,205,150,0.4)';
+  ctx.fillRect(cx - reach, cy - reach, reach * 2, reach * 2);
+
+  // A second, tighter pool of light right at the eyes.
+  const core = ctx.createRadialGradient(cx, cy, 2, cx, cy, Math.min(104, reach * 0.46));
+  core.addColorStop(0, `rgba(${base},${hot ? 0.34 : 0.26})`);
+  core.addColorStop(0.6, `rgba(${base},${hot ? 0.12 : 0.09})`);
+  core.addColorStop(1, `rgba(${base},0)`);
+  ctx.fillStyle = core;
+  ctx.fillRect(cx - reach, cy - reach, reach * 2, reach * 2);
+  ctx.restore();
+
+  ctx.save();
+  conePath(ctx, pts);
+  ctx.strokeStyle = hot ? 'rgba(238,91,65,0.72)' : 'rgba(255,205,150,0.38)';
   ctx.lineWidth = hot ? 2 : 1.4;
   ctx.stroke();
   ctx.restore();
@@ -75,10 +105,7 @@ export function drawGuard(ctx, g) {
   const y = g.y * TILE;
   ctx.save();
 
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.beginPath();
-  ctx.ellipse(x + 2, y + 7, 14, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
+  dropShadow(ctx, x, y + 1, 13, 9, 0.34);
 
   if (g.alert > 0.3) {
     ctx.strokeStyle = `rgba(238,91,65,${0.3 + g.alert * 0.55})`;
@@ -190,6 +217,17 @@ export function drawPlayer(ctx, world) {
   const crouched = world.stance === 'crouch' || world.stance === 'vent';
   ctx.save();
 
+  // The player carries the lamp: a small pool of light, so the eye lands here first.
+  const pool = ctx.createRadialGradient(x, y, 2, x, y, crouched ? 54 : 66);
+  pool.addColorStop(0, 'rgba(232,244,255,0.42)');
+  pool.addColorStop(0.4, 'rgba(200,222,248,0.19)');
+  pool.addColorStop(0.74, 'rgba(172,202,234,0.07)');
+  pool.addColorStop(1, 'rgba(160,190,225,0)');
+  ctx.fillStyle = pool;
+  ctx.beginPath();
+  ctx.arc(x, y, crouched ? 54 : 66, 0, Math.PI * 2);
+  ctx.fill();
+
   if (world.stance === 'sprint') {
     ctx.strokeStyle = 'rgba(233,240,248,0.28)';
     ctx.lineWidth = 2;
@@ -200,10 +238,7 @@ export function drawPlayer(ctx, world) {
     }
   }
 
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.beginPath();
-  ctx.ellipse(x + 1, y + 6, crouched ? 9 : 11, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
+  dropShadow(ctx, x, y, crouched ? 8 : 10, 5.5, 0.3);
 
   const rad = crouched ? 9.5 : 12;
   const body = ctx.createRadialGradient(x - 3, y - 4, 2, x, y, rad + 2);
