@@ -112,6 +112,16 @@ export function drawGuard(ctx, g) {
   ctx.font = '700 10px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'center';
   ctx.fillText(g.id, x - 1, y + 3.5);
+
+  if (g.alert > 0.5) {
+    ctx.fillStyle = 'rgba(238,91,65,0.95)';
+    ctx.beginPath();
+    ctx.arc(x, y - 20, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1a0b08';
+    ctx.font = '800 10px ui-monospace, Menlo, monospace';
+    ctx.fillText('!', x, y - 16.5);
+  }
   ctx.restore();
 }
 
@@ -240,10 +250,11 @@ export function drawEffects(ctx, world) {
   const height = ctx.canvas.height;
   if (world.phase === 'play' && world.awareness >= AWARE.nearMiss) {
     const heat = (world.awareness - AWARE.nearMiss) / (AWARE.caught - AWARE.nearMiss);
-    const pulse = 0.35 + 0.25 * Math.sin(world.clock * 9) + world.nearFlash * 0.4;
-    const alpha = Math.min(0.75, 0.2 + heat * 0.5 + pulse * 0.15);
-    const grad = ctx.createRadialGradient(width / 2, height / 2, height * 0.28, width / 2, height / 2, height * 0.78);
+    const pulse = 0.5 + 0.5 * Math.sin(world.clock * 9) + world.nearFlash * 0.5;
+    const alpha = Math.min(0.62, 0.18 + heat * 0.34 + pulse * 0.1);
+    const grad = ctx.createRadialGradient(width / 2, height / 2, height * 0.44, width / 2, height / 2, height * 0.86);
     grad.addColorStop(0, 'rgba(238,91,65,0)');
+    grad.addColorStop(0.72, `rgba(238,91,65,${alpha * 0.35})`);
     grad.addColorStop(1, `rgba(238,91,65,${alpha})`);
     ctx.save();
     ctx.fillStyle = grad;
