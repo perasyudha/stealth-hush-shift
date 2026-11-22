@@ -128,7 +128,7 @@ const LEGEND = [
   [diamond, 'GOLD KEY'],
   [door, 'TEAL EXIT'],
   [camera, 'CAMERA · sees over cover'],
-  [cone, 'VISION CONE'],
+  [cone, 'CONE · RAISES ALARM'],
   [ring, 'NOISE RADIUS'],
 ];
 
@@ -271,7 +271,6 @@ function drawBottomStrip(ctx, world) {
   let x = 22;
   ctx.save();
   ctx.font = `600 10.5px ${MONO}`;
-  ctx.textBaseline = 'alphabetic';
   LEGEND.forEach(([glyph, title], index) => {
     if (index > 0) {
       ctx.fillStyle = 'rgba(176,204,232,0.42)';
