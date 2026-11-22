@@ -102,6 +102,13 @@ export function applyPose(world, pose) {
     world.camera.angle = 3.3;
     world.routeMeters.front = 12;
     world.routeMeters.service = 78;
+    world.trail = [
+      { x: 2.5, y: 2.5 }, { x: 2.5, y: 6 }, { x: 2.5, y: 9.5 }, { x: 2.2, y: 13 },
+      { x: 2.5, y: 16.6 }, { x: 7, y: 16.6 }, { x: 12, y: 17.4 }, { x: 18, y: 17.2 },
+      { x: 24, y: 16.6 }, { x: 27.2, y: 16.4 }, { x: 27.2, y: 15.2 }, { x: 27.3, y: 13.6 },
+      { x: 27.2, y: 11.4 }, { x: 28.4, y: 11.2 }, { x: 29.2, y: 12.6 }, { x: 28.6, y: 14.4 },
+      { x: 27.4, y: 15.4 }, { x: 27.6, y: 16.6 }, { x: 29.4, y: 17.2 }, { x: 30.1, y: 17.4 },
+    ];
   }
 }
 

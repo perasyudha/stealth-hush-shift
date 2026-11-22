@@ -16,12 +16,14 @@ Then open http://127.0.0.1:8099/ — `WASD` move, `Shift` sprint, `Ctrl` crouch,
 
 ## Layout
 
-- `game/src/level.js` — the floor plan as text, plus tile rules.
-- `game/src/state.js` — world state, collision, reset and poses.
-- `game/src/patrol.js`, `vision.js` — guard routes and the cone that cover blocks.
-- `game/src/actors.js`, `player.js`, `input.js` — movement, noise, footsteps.
-- `game/src/art.js`, `hud.js`, `audio.js`, `main.js` — drawing, HUD, generated sound, loop.
-- `screenshots/` — cover, hide, close and win poses.
+- `game/src/config.js` — the floor plan as text, patrol routes, camera and tuning numbers.
+- `game/src/level.js` — tile queries, line of sight, clipped cone polygons, route zoning.
+- `game/src/state.js` — the mutable world: player, guards, camera, meters.
+- `game/src/patrol.js`, `vision.js` — guard routes, the cone that cover blocks, awareness.
+- `game/src/actors.js`, `player.js`, `input.js` — movement, noise, footsteps, the moving floor.
+- `game/src/art.js`, `hud.js`, `audio.js`, `main.js` — still floor and light map, HUD, generated sound, loop.
+- `game/src/shots.js` — the deterministic poses the screenshots use.
+- `screenshots/` — cover, hide, close and win poses, packed by `tools/pack_shots.py`.
 - `main.ts` — the hand-in: packs `game/` and `screenshots/` with `dossier.json` into `MAKEFUN_OUTPUT_DIR`.
 
 ---

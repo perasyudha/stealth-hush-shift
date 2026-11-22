@@ -178,8 +178,17 @@ function drawTopStrip(ctx, world) {
   const barW = 292;
   const barY = 22;
   const barH = 14;
-  text(ctx, world.hidden ? 'HIDDEN · METER DRAINING' : 'AWARENESS', barX, barY - 4,
-    world.hidden ? PAL.teal : PAL.dim, 9.5, MONO);
+  text(ctx, 'AWARENESS', barX, barY - 4, PAL.dim, 9.5, MONO);
+  if (world.hidden) {
+    const labelX = barX + 78;
+    ctx.save();
+    ctx.fillStyle = 'rgba(67,220,178,0.16)';
+    ctx.fillRect(labelX, barY - 12, 62, 11);
+    ctx.fillStyle = PAL.teal;
+    ctx.font = `700 9px ${MONO}`;
+    ctx.fillText('HIDDEN', labelX + 7, barY - 4);
+    ctx.restore();
+  }
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.07)';
   ctx.fillRect(barX, barY, barW, barH);
@@ -202,6 +211,12 @@ function drawTopStrip(ctx, world) {
   ctx.stroke();
   ctx.strokeStyle = 'rgba(255,255,255,0.22)';
   ctx.strokeRect(barX, barY, barW, barH);
+  ctx.fillStyle = 'rgba(238,91,65,0.85)';
+  ctx.font = `700 8px ${MONO}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('60', tick, barY + barH + 9);
+  ctx.fillStyle = 'rgba(238,91,65,0.55)';
+  ctx.fillText('100', barX + barW - 12, barY + barH + 9);
   ctx.fillStyle = PAL.text;
   ctx.font = `700 11px ${MONO}`;
   ctx.textAlign = 'right';
@@ -210,7 +225,8 @@ function drawTopStrip(ctx, world) {
 
   const mm = String(Math.floor(world.time / 60)).padStart(2, '0');
   const ss = (world.time % 60).toFixed(1).padStart(4, '0');
-  const status = `TIME ${mm}:${ss}   ${STANCE_LABEL[world.stance] ?? 'WALK'}   NOISE ${world.noise.toFixed(1)}m`;
+  const danger = world.awareness >= AWARE.nearMiss ? `   NEAR MISS ${world.nearMisses}` : '';
+  const status = `TIME ${mm}:${ss}   ${STANCE_LABEL[world.stance] ?? 'WALK'}   NOISE ${world.noise.toFixed(1)}m${danger}`;
   text(ctx, status, barX, 56, PAL.dim, 9.5, MONO);
 }
 
@@ -227,10 +243,22 @@ function drawBottomStrip(ctx, world) {
   ctx.font = `500 10px ${MONO}`;
   for (const [glyph, title] of LEGEND) {
     glyph(ctx, x, y0 + 22);
-    ctx.fillStyle = 'rgba(180,196,212,0.85)';
+    ctx.fillStyle = 'rgba(190,206,222,0.92)';
     ctx.fillText(title, x + 16, y0 + 25);
-    x += ctx.measureText(title).width + 46;
+    x += ctx.measureText(title).width + 22;
+    if (x < 900) {
+      ctx.fillStyle = 'rgba(150,180,210,0.3)';
+      ctx.fillText('|', x, y0 + 25);
+      x += 22;
+    } else {
+      x += 24;
+    }
   }
+  ctx.strokeStyle = 'rgba(150,180,210,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y0 + 12);
+  ctx.lineTo(x - 8, y0 + 32);
+  ctx.stroke();
   ctx.restore();
 
   text(ctx, 'WASD move · SHIFT sprint (loud) · CTRL crouch (quiet) · R restart',
@@ -248,10 +276,10 @@ function drawBottomStrip(ctx, world) {
 
   if (world.phase === 'clean') {
     const near = world.nearMisses;
-    card(ctx, PAL.exit, 'CLEAN EXIT', [
+    card(ctx, PAL.exit, near === 0 ? 'CLEAN EXIT' : 'EXIT MADE', [
       `Out with the gold vault key in ${world.time.toFixed(1)} seconds.`,
-      `Route taken: ${routeLabel(world)}.`,
-      near === 0 ? 'No alarm raised: no cone ever held you.' : `Near misses survived: ${near}.`,
+      `Route taken: ${routeLabel(world)}, traced behind this card.`,
+      near === 0 ? 'The alarm never went up: no cone ever held you.' : `Cones held you ${near} time${near === 1 ? '' : 's'}; the meter never filled.`,
     ], 'Press R to run another route through the same floor.');
   }
 }
@@ -263,7 +291,7 @@ function card(ctx, accent, title, lines, hint) {
   const y = HUD_TOP + (VIEW_H - h) / 2;
 
   ctx.save();
-  ctx.fillStyle = 'rgba(4,7,11,0.74)';
+  ctx.fillStyle = 'rgba(4,7,11,0.62)';
   ctx.fillRect(0, HUD_TOP, VIEW_W, VIEW_H);
   ctx.fillStyle = 'rgba(10,15,22,0.97)';
   ctx.strokeStyle = 'rgba(150,180,210,0.22)';

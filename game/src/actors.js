@@ -11,6 +11,22 @@ function conePath(ctx, pts) {
   ctx.closePath();
 }
 
+export function drawTrail(ctx, world) {
+  if (world.trail.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(226,236,246,0.16)';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  world.trail.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x * TILE, point.y * TILE);
+    else ctx.lineTo(point.x * TILE, point.y * TILE);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawGuardCone(ctx, g) {
   const pts = conePolygon(g.x, g.y, g.angle, g.fov, g.range);
   const hot = g.alert > 0.45;
@@ -79,7 +95,7 @@ export function drawGuard(ctx, g) {
   // Shoulders, then the head: a guard reads as a person, not a dot.
   ctx.fillStyle = PAL.guardDark;
   ctx.beginPath();
-  ctx.ellipse(-1, 0, 12, 9.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(-1, 0, 13, 10.5, 0, 0, Math.PI * 2);
   ctx.fill();
 
   const body = ctx.createRadialGradient(0, -4, 2, 0, 0, 12);
@@ -87,7 +103,7 @@ export function drawGuard(ctx, g) {
   body.addColorStop(1, PAL.guard);
   ctx.fillStyle = body;
   ctx.beginPath();
-  ctx.arc(1, 0, 9.5, 0, Math.PI * 2);
+  ctx.arc(1, 0, 10.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = 'rgba(30,10,6,0.85)';
   ctx.lineWidth = 1.8;
@@ -189,7 +205,7 @@ export function drawPlayer(ctx, world) {
   ctx.ellipse(x + 1, y + 6, crouched ? 9 : 11, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const rad = crouched ? 9 : 11.5;
+  const rad = crouched ? 9.5 : 12;
   const body = ctx.createRadialGradient(x - 3, y - 4, 2, x, y, rad + 2);
   body.addColorStop(0, '#ffffff');
   body.addColorStop(1, PAL.player);
@@ -252,13 +268,17 @@ export function drawEffects(ctx, world) {
     const heat = (world.awareness - AWARE.nearMiss) / (AWARE.caught - AWARE.nearMiss);
     const pulse = 0.5 + 0.5 * Math.sin(world.clock * 9) + world.nearFlash * 0.5;
     const alpha = Math.min(0.62, 0.18 + heat * 0.34 + pulse * 0.1);
-    const grad = ctx.createRadialGradient(width / 2, height / 2, height * 0.44, width / 2, height / 2, height * 0.86);
+    const grad = ctx.createRadialGradient(width / 2, height / 2, height * 0.34, width / 2, height / 2, height * 0.82);
     grad.addColorStop(0, 'rgba(238,91,65,0)');
-    grad.addColorStop(0.72, `rgba(238,91,65,${alpha * 0.35})`);
+    grad.addColorStop(0.55, `rgba(238,91,65,${alpha * 0.4})`);
     grad.addColorStop(1, `rgba(238,91,65,${alpha})`);
     ctx.save();
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
+    // A hard red frame, the way an alarm panel edges the room.
+    ctx.strokeStyle = `rgba(238,91,65,${0.25 + heat * 0.4})`;
+    ctx.lineWidth = 5;
+    ctx.strokeRect(2.5, 2.5, width - 5, height - 5);
     ctx.restore();
   }
 }

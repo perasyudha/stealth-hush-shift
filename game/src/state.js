@@ -52,6 +52,8 @@ export function createState() {
     keyTile: { x: key.x + 0.5, y: key.y + 0.5 },
     exitTile: { x: exit.x + 0.5, y: exit.y + 0.5 },
     routeMeters: { front: 0, service: 0, vent: 0 },
+    trail: [],
+    trailTimer: 0,
     shot: null,
   };
 }

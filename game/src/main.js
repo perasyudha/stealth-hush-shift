@@ -12,6 +12,7 @@ import {
   drawEffects,
   drawGuard,
   drawGuardCone,
+  drawTrail,
   drawNoise,
   drawPlayer,
 } from './actors.js';
@@ -85,6 +86,7 @@ function draw() {
   paintProps(ctx, world);
   paintLightmap(ctx, world);
 
+  drawTrail(ctx, world);
   drawCameraCone(ctx, world.camera);
   for (const guard of world.guards) drawGuardCone(ctx, guard);
 
@@ -94,8 +96,8 @@ function draw() {
   drawPlayer(ctx, world);
   ctx.restore();
 
-  drawEffects(ctx, world);
   drawHud(ctx, world);
+  drawEffects(ctx, world);
 }
 
 let last = performance.now();

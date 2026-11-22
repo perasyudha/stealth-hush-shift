@@ -37,6 +37,14 @@ export function updatePlayer(world, dt, move, events) {
     p.angle = Math.atan2(move.dy, move.dx);
   }
 
+  // Breadcrumbs: the path the run took, drawn faintly so a route can be read back.
+  world.trailTimer -= dt;
+  if (move.moving && world.trailTimer <= 0) {
+    world.trailTimer = 0.28;
+    world.trail.push({ x: p.x, y: p.y });
+    if (world.trail.length > 600) world.trail.shift();
+  }
+
   const route = routeAt(p.x, p.y);
   if (route) world.routeMeters[route] += p.speed * dt;
 

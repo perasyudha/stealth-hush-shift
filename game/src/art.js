@@ -131,9 +131,9 @@ function paintDoorMat(ctx, x, y) {
   const px = x * TILE;
   const py = y * TILE;
   ctx.save();
-  ctx.fillStyle = 'rgba(140,190,225,0.12)';
-  ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
-  ctx.strokeStyle = 'rgba(160,205,235,0.3)';
+  ctx.fillStyle = 'rgba(150,205,240,0.2)';
+  ctx.fillRect(px + 5, py + 5, TILE - 10, TILE - 10);
+  ctx.strokeStyle = 'rgba(180,225,255,0.55)';
   ctx.setLineDash([3, 4]);
   ctx.lineWidth = 1.2;
   ctx.strokeRect(px + 6.5, py + 6.5, TILE - 13, TILE - 13);
@@ -386,6 +386,12 @@ export function paintProps(ctx, world) {
     paintDoorMat(ctx, door.x, door.y);
     paintDoorJamb(ctx, door.x, door.y);
   }
+  ctx.save();
+  ctx.strokeStyle = 'rgba(244,196,85,0.22)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(24 * TILE + 3, 10 * TILE + 3, 7 * TILE - 6, 4 * TILE - 6);
+  ctx.restore();
+
   paintKey(ctx, world);
   paintExit(ctx, world);
 
