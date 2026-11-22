@@ -58,6 +58,31 @@ function zoneOf(x, y) {
   return 'floor';
 }
 
+// A stable per-tile hash: the floor keeps the same grain in every frame and every still.
+function grain(x, y) {
+  let h = Math.imul(x + 0x9e37, 374761393) ^ Math.imul(y + 0x85eb, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+const shades = new Map();
+
+// Nudge a hex tone up or down, so one tile is a touch warmer or cooler than its neighbour.
+function shade(hex, amount) {
+  const key = `${hex}:${amount.toFixed(3)}`;
+  const hit = shades.get(key);
+  if (hit) return hit;
+  const value = parseInt(hex.slice(1), 16);
+  const channel = (shift) => {
+    const base = (value >> shift) & 0xff;
+    const moved = Math.round(base * (1 + amount) + (amount > 0 ? amount * 26 : amount * 8));
+    return Math.min(255, Math.max(0, moved));
+  };
+  const out = `rgb(${channel(16)},${channel(8)},${channel(0)})`;
+  shades.set(key, out);
+  return out;
+}
+
 export function paintFloor(ctx, world) {
   ctx.fillStyle = PAL.ink;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -70,23 +95,68 @@ export function paintFloor(ctx, world) {
       const py = y * TILE;
       const even = (x + y) % 2 === 0;
       const zone = zoneOf(x, y);
+      const tone = (grain(x, y) - 0.5) * 0.17;
 
-      if (isVent(ch)) {
-        ctx.fillStyle = PAL.vent;
-      } else if (zone === 'vault') {
-        ctx.fillStyle = even ? PAL.vaultA : PAL.vaultB;
-      } else if (zone === 'service') {
-        ctx.fillStyle = even ? PAL.serviceA : PAL.serviceB;
-      } else {
-        ctx.fillStyle = even ? PAL.floorA : PAL.floorB;
-      }
+      let base;
+      if (isVent(ch)) base = PAL.vent;
+      else if (zone === 'vault') base = even ? PAL.vaultA : PAL.vaultB;
+      else if (zone === 'service') base = even ? PAL.serviceA : PAL.serviceB;
+      else base = even ? PAL.floorA : PAL.floorB;
+
+      ctx.fillStyle = shade(base, tone);
       ctx.fillRect(px, py, TILE, TILE);
 
-      ctx.strokeStyle = 'rgba(190,215,240,0.022)';
+      // Grout: a dark seam on the top and left, a hairline catch on the far edges.
+      ctx.strokeStyle = 'rgba(3,6,10,0.5)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+      ctx.beginPath();
+      ctx.moveTo(px + 0.5, py);
+      ctx.lineTo(px + 0.5, py + TILE);
+      ctx.moveTo(px, py + 0.5);
+      ctx.lineTo(px + TILE, py + 0.5);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(186,214,240,0.045)';
+      ctx.beginPath();
+      ctx.moveTo(px + TILE - 0.5, py);
+      ctx.lineTo(px + TILE - 0.5, py + TILE);
+      ctx.moveTo(px, py + TILE - 0.5);
+      ctx.lineTo(px + TILE, py + TILE - 0.5);
+      ctx.stroke();
     }
   }
+
+  // Every fourth seam is a drawn grid line, with a surveyor's tick at the crossings:
+  // the plan reads as a blueprint rather than a set of flat squares.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(126,170,212,0.06)';
+  ctx.lineWidth = 1;
+  for (let x = 4; x < COLS; x += 4) {
+    ctx.beginPath();
+    ctx.moveTo(x * TILE + 0.5, 0);
+    ctx.lineTo(x * TILE + 0.5, VIEW_H);
+    ctx.stroke();
+  }
+  for (let y = 4; y < ROWS; y += 4) {
+    ctx.beginPath();
+    ctx.moveTo(0, y * TILE + 0.5);
+    ctx.lineTo(VIEW_W, y * TILE + 0.5);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(158,196,230,0.1)';
+  for (let y = 4; y < ROWS; y += 4) {
+    for (let x = 4; x < COLS; x += 4) {
+      const cx = x * TILE;
+      const cy = y * TILE;
+      if (isWall(MAP[y][x])) continue;
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, cy);
+      ctx.lineTo(cx + 5, cy);
+      ctx.moveTo(cx, cy - 5);
+      ctx.lineTo(cx, cy + 5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 
   // Warehouse grating and the long service run get a floor texture, not flat squares.
   ctx.save();
