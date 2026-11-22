@@ -8,17 +8,17 @@ export const PAL = {
   ink: '#070a0f',
   floorA: '#121924',
   floorB: '#0f141d',
-  vaultA: '#1e1a15',
-  vaultB: '#1a1712',
+  vaultA: '#1b1f26',
+  vaultB: '#181c22',
   serviceA: '#131a1c',
   serviceB: '#101617',
   vent: '#0b1015',
   wall: '#232c39',
   wallTop: '#3a4657',
   wallEdge: 'rgba(180,210,235,0.16)',
-  crate: '#7d6435',
-  crateDark: '#5a4726',
-  crateEdge: '#9c8047',
+  crate: '#4f6076',
+  crateDark: '#3b4a5c',
+  crateEdge: '#67798f',
   desk: '#33404b',
   deskTop: '#41505d',
   paper: 'rgba(226,236,246,0.55)',
@@ -222,42 +222,55 @@ function paintWall(ctx, x, y) {
   ctx.strokeStyle = PAL.wallEdge;
   ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
 
-  // A soft cast shadow on the floor tile below a wall reads as height.
+  // A soft cast shadow on the floor below and right of a wall reads as height.
   if (!isWall(MAP[y + 1]?.[x])) {
-    const grad = ctx.createLinearGradient(0, py + TILE, 0, py + TILE + 18);
-    grad.addColorStop(0, 'rgba(0,0,0,0.42)');
+    const grad = ctx.createLinearGradient(0, py + TILE, 0, py + TILE + 26);
+    grad.addColorStop(0, 'rgba(0,0,0,0.5)');
+    grad.addColorStop(0.4, 'rgba(0,0,0,0.22)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grad;
-    ctx.fillRect(px, py + TILE, TILE, 18);
+    ctx.fillRect(px, py + TILE, TILE, 26);
+  }
+  if (!isWall(MAP[y]?.[x + 1])) {
+    const side = ctx.createLinearGradient(px + TILE, 0, px + TILE + 14, 0);
+    side.addColorStop(0, 'rgba(0,0,0,0.34)');
+    side.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = side;
+    ctx.fillRect(px + TILE, py, 14, TILE);
   }
 }
 
 function paintCrate(ctx, x, y) {
   const px = x * TILE;
   const py = y * TILE;
+  // Slight size jitter per tile: the yard was stacked by hand, not by a grid tool.
+  const inset = 3 + grain(x, y) * 4;
+  const radius = 3 + grain(y, x) * 2;
+  const lean = (grain(x + 7, y + 3) - 0.5) * 3;
+  const w = TILE - inset * 2;
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillRect(px + 8, py + 10, TILE - 12, TILE - 10);
-  const grad = ctx.createLinearGradient(px, py, px + TILE, py + TILE);
+  ctx.fillRect(px + inset + 4, py + inset + 6, w - 3, w - 3);
+  const grad = ctx.createLinearGradient(px + inset, py + inset, px + inset + w, py + inset + w);
   grad.addColorStop(0, PAL.crateEdge);
   grad.addColorStop(0.45, PAL.crate);
   grad.addColorStop(1, PAL.crateDark);
   ctx.fillStyle = grad;
-  rr(ctx, px + 4, py + 4, TILE - 8, TILE - 8, 4);
+  rr(ctx, px + inset, py + inset, w, w, radius);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(20,14,6,0.55)';
+  ctx.strokeStyle = 'rgba(10,16,24,0.6)';
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.strokeStyle = 'rgba(20,14,6,0.35)';
+  ctx.strokeStyle = 'rgba(10,16,24,0.34)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(px + 6, py + 14);
-  ctx.lineTo(px + TILE - 6, py + 14);
-  ctx.moveTo(px + 6, py + 26);
-  ctx.lineTo(px + TILE - 6, py + 26);
+  ctx.moveTo(px + inset + 2, py + inset + w * 0.36 + lean);
+  ctx.lineTo(px + inset + w - 2, py + inset + w * 0.36 + lean);
+  ctx.moveTo(px + inset + 2, py + inset + w * 0.66 + lean);
+  ctx.lineTo(px + inset + w - 2, py + inset + w * 0.66 + lean);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(240,220,180,0.22)';
-  ctx.fillRect(px + 6, py + 6, TILE - 12, 3);
+  ctx.fillStyle = 'rgba(206,226,246,0.2)';
+  ctx.fillRect(px + inset + 2, py + inset + 2, w - 4, 3);
   ctx.restore();
 }
 
@@ -359,18 +372,18 @@ function paintKey(ctx, world) {
   const bob = Math.sin(world.clock * 0.9) * 2.6;
   const cy = k.y * TILE + bob;
   ctx.save();
-  const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 46);
+  const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 24);
   glow.addColorStop(0, `rgba(244,196,85,${0.4 + pulse * 0.18})`);
   glow.addColorStop(0.5, `rgba(244,196,85,${0.11 + pulse * 0.06})`);
   glow.addColorStop(1, 'rgba(244,196,85,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(cx - 48, cy - 48, 96, 96);
+  ctx.fillRect(cx - 26, cy - 26, 52, 52);
 
   // One slow brass ring per beat: the key breathes instead of blinking.
   ctx.strokeStyle = `rgba(244,196,85,${0.1 + pulse * 0.16})`;
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(cx, cy, 19 + pulse * 9, 0, Math.PI * 2);
+  ctx.arc(cx, cy, 14 + pulse * 6, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.translate(cx, cy);
@@ -409,17 +422,17 @@ function paintExit(ctx, world) {
   const cy = e.y * TILE;
   const pulse = 0.5 + 0.5 * Math.sin(world.clock * 0.8);
   ctx.save();
-  const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, 46);
+  const glow = ctx.createRadialGradient(cx, cy, 3, cx, cy, 24);
   glow.addColorStop(0, `rgba(65,220,176,${0.3 + pulse * 0.2})`);
   glow.addColorStop(1, 'rgba(65,220,176,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(cx - 48, cy - 48, 96, 96);
+  ctx.fillRect(cx - 26, cy - 26, 52, 52);
 
   // The same slow beat as the key, in teal: the way out is alive too.
   ctx.strokeStyle = `rgba(65,220,176,${0.09 + pulse * 0.15})`;
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(cx, cy, 21 + pulse * 8, 0, Math.PI * 2);
+  ctx.arc(cx, cy, 15 + pulse * 6, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.fillStyle = '#0c1f1c';
@@ -456,6 +469,96 @@ function stencil(ctx, text, x, y, tint, size = 11) {
   ctx.restore();
 }
 
+// Two small staging clusters fill the bare start corner: a loaded pallet and cartons by
+// the top wall, a cable drum and bucket by the aisle. Decoration only, so nothing blocks.
+function paintStagingProps(ctx) {
+  ctx.save();
+
+  // Cluster one: pallet of cartons left by the start gap.
+  const ax = 2.4 * TILE;
+  const ay = 3.1 * TILE;
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(ax + 4, ay + 22, 46, 12);
+  ctx.fillStyle = '#2b3543';
+  rr(ctx, ax, ay + 16, 46, 13, 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(158,186,214,0.28)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(10,16,24,0.5)';
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(ax + i * 11.5, ay + 17);
+    ctx.lineTo(ax + i * 11.5, ay + 28);
+    ctx.stroke();
+  }
+  const carton = (x, y, w, h, tone) => {
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(x + 2, y + 3, w, h);
+    ctx.fillStyle = tone;
+    rr(ctx, x, y, w, h, 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(186,210,234,0.26)';
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(200,222,244,0.14)';
+    ctx.fillRect(x + 3, y + h * 0.42, w - 6, 2);
+  };
+  carton(ax + 3, ay - 4, 21, 18, '#48586a');
+  carton(ax + 22, ay + 2, 16, 13, '#3f4d5d');
+
+  // Cluster two: drum of spare cable and a mop bucket.
+  const bx = 6.3 * TILE;
+  const by = 3.25 * TILE;
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(bx + 3, by + 4, 15, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#33404f';
+  ctx.beginPath();
+  ctx.arc(bx, by, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(176,204,232,0.34)';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(176,204,232,0.2)';
+  ctx.beginPath();
+  ctx.arc(bx, by, 8.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#222b36';
+  ctx.beginPath();
+  ctx.arc(bx, by, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(bx + 28, by + 3, 10, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#3a4552';
+  ctx.beginPath();
+  ctx.moveTo(bx + 19, by - 5);
+  ctx.lineTo(bx + 34, by - 5);
+  ctx.lineTo(bx + 32, by + 5);
+  ctx.lineTo(bx + 21, by + 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(186,210,234,0.3)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(186,210,234,0.26)';
+  ctx.beginPath();
+  ctx.arc(bx + 26.5, by - 6, 7.5, Math.PI * 1.05, Math.PI * 1.95);
+  ctx.stroke();
+
+  // A loose run of cable on the floor ties the two clusters together.
+  ctx.strokeStyle = 'rgba(140,168,196,0.22)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(ax + 50, ay + 26);
+  ctx.bezierCurveTo(ax + 84, ay + 34, bx - 24, by + 22, bx - 12, by + 6);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function paintProps(ctx, world) {
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
@@ -472,10 +575,12 @@ export function paintProps(ctx, world) {
     paintDoorJamb(ctx, door.x, door.y);
   }
   ctx.save();
-  ctx.strokeStyle = 'rgba(244,196,85,0.22)';
+  ctx.strokeStyle = 'rgba(152,182,214,0.22)';
   ctx.lineWidth = 2;
   ctx.strokeRect(24 * TILE + 3, 10 * TILE + 3, 7 * TILE - 6, 4 * TILE - 6);
   ctx.restore();
+
+  paintStagingProps(ctx);
 
   paintKey(ctx, world);
   paintExit(ctx, world);
@@ -484,7 +589,7 @@ export function paintProps(ctx, world) {
   stencil(ctx, 'FRONT HALL', 12 * TILE + 4, 4 * TILE + 26, 'rgba(159,192,230,0.55)', 12);
   stencil(ctx, 'SERVICE RUN', 17 * TILE + 2, 18 * TILE + 27, 'rgba(230,180,159,0.5)', 12);
   stencil(ctx, 'VENT CRAWL', 5 * TILE + 4, 11 * TILE + 26, 'rgba(159,230,205,0.6)', 12);
-  stencil(ctx, 'VAULT', 25 * TILE + 6, 13 * TILE + 26, 'rgba(244,196,85,0.55)', 12);
+  stencil(ctx, 'VAULT', 25 * TILE + 6, 13 * TILE + 26, 'rgba(180,200,224,0.62)', 12);
 }
 
 let lightCanvas = null;
@@ -514,9 +619,9 @@ export function paintLightmap(ctx, world) {
   };
 
   const p = world.player;
-  hole(p.x, p.y, 145, 0.9);
-  hole(world.keyTile.x, world.keyTile.y, 120, world.hasKey ? 0.2 : 0.85);
-  hole(world.exitTile.x, world.exitTile.y, 150, 0.85);
+  hole(p.x, p.y, 74, 0.9);
+  hole(world.keyTile.x, world.keyTile.y, 60, world.hasKey ? 0.2 : 0.85);
+  hole(world.exitTile.x, world.exitTile.y, 74, 0.85);
   for (const g of world.guards) hole(g.x, g.y, 74, 0.4);
   hole(world.camera.x, world.camera.y, 56, 0.3);
 

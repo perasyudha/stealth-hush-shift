@@ -78,22 +78,51 @@ export function drawGuardCone(ctx, g) {
   ctx.restore();
 }
 
+const hatchCache = new Map();
+
+// Diagonal hatching on a tiny repeating tile: the ceiling camera paints a drawn
+// pattern rather than a second colour wash, so teal stays the exit's alone.
+function hatch(ctx, rgb) {
+  const hit = hatchCache.get(rgb);
+  if (hit) return hit;
+  const tile = document.createElement('canvas');
+  tile.width = 11;
+  tile.height = 11;
+  const tc = tile.getContext('2d');
+  tc.strokeStyle = `rgba(${rgb},0.55)`;
+  tc.lineWidth = 1.3;
+  tc.beginPath();
+  tc.moveTo(-3, 8);
+  tc.lineTo(8, -3);
+  tc.moveTo(3, 14);
+  tc.lineTo(14, 3);
+  tc.stroke();
+  const pattern = ctx.createPattern(tile, 'repeat');
+  hatchCache.set(rgb, pattern);
+  return pattern;
+}
+
 export function drawCameraCone(ctx, cam) {
   const pts = conePolygon(cam.x, cam.y, cam.angle, cam.fov, cam.range, 20, isWall);
   const cx = cam.x * TILE;
   const cy = cam.y * TILE;
-  const grad = ctx.createRadialGradient(cx, cy, 6, cx, cy, cam.range * TILE);
   const hot = cam.alert > 0.4;
   const base = hot ? '238,91,65' : '150,200,255';
-  grad.addColorStop(0, `rgba(${base},0.34)`);
-  grad.addColorStop(0.6, `rgba(${base},0.15)`);
-  grad.addColorStop(1, `rgba(${base},0.01)`);
+  const reach = cam.range * TILE;
 
   ctx.save();
   conePath(ctx, pts);
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.strokeStyle = `rgba(${base},0.6)`;
+  ctx.clip();
+  ctx.fillStyle = `rgba(${base},0.07)`;
+  ctx.fillRect(cx - reach, cy - reach, reach * 2, reach * 2);
+  ctx.globalAlpha = hot ? 0.85 : 0.6;
+  ctx.fillStyle = hatch(ctx, base);
+  ctx.fillRect(cx - reach, cy - reach, reach * 2, reach * 2);
+  ctx.restore();
+
+  ctx.save();
+  conePath(ctx, pts);
+  ctx.strokeStyle = `rgba(${base},0.55)`;
   ctx.setLineDash([9, 5]);
   ctx.lineWidth = 1.6;
   ctx.stroke();
@@ -218,14 +247,14 @@ export function drawPlayer(ctx, world) {
   ctx.save();
 
   // The player carries the lamp: a small pool of light, so the eye lands here first.
-  const pool = ctx.createRadialGradient(x, y, 2, x, y, crouched ? 54 : 66);
+  const pool = ctx.createRadialGradient(x, y, 2, x, y, crouched ? 28 : 34);
   pool.addColorStop(0, 'rgba(232,244,255,0.42)');
   pool.addColorStop(0.4, 'rgba(200,222,248,0.19)');
   pool.addColorStop(0.74, 'rgba(172,202,234,0.07)');
   pool.addColorStop(1, 'rgba(160,190,225,0)');
   ctx.fillStyle = pool;
   ctx.beginPath();
-  ctx.arc(x, y, crouched ? 54 : 66, 0, Math.PI * 2);
+  ctx.arc(x, y, crouched ? 28 : 34, 0, Math.PI * 2);
   ctx.fill();
 
   if (world.stance === 'sprint') {
