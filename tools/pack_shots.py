@@ -10,7 +10,7 @@ for shot in ['cover', 'hide', 'close', 'win']:
     path = SHOTS / f'{shot}.png'
     image = Image.open(path).convert('RGB')
     size = image.size
-    for colors in (256, 192, 128, 96, 64):
+    for colors in (200, 160, 128, 96, 64):
         work = image.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.FLOYDSTEINBERG)
         work.save(path, optimize=True)
         if path.stat().st_size <= CAP:
