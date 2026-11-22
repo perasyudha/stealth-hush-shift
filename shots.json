@@ -1,0 +1,6 @@
+[
+  { "name": "cover.png", "query": "?shot=cover" },
+  { "name": "hide.png", "query": "?shot=hide" },
+  { "name": "close.png", "query": "?shot=close" },
+  { "name": "win.png", "query": "?shot=win" }
+]
