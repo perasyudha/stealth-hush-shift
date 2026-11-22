@@ -201,6 +201,14 @@ function drawTopStrip(ctx, world) {
   chipX += chip(ctx, crate, 'COVER', chipX, chipY, PAL.crate) + 7;
   chipX += chip(ctx, diamond, 'VAULT KEY', chipX, chipY, PAL.key) + 7;
   chipX += chip(ctx, door, 'EXIT', chipX, chipY, PAL.teal) + 16;
+  // A hairline splits what the floor is made of from the ways through it.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(150,180,210,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(chipX - 9.5, chipY + 2);
+  ctx.lineTo(chipX - 9.5, chipY + 14);
+  ctx.stroke();
+  ctx.restore();
   for (const route of Object.values(ROUTES)) chipX += routeChip(ctx, route, chipX, chipY) + 6;
 
   // Awareness meter, with the 60% line marked: past it a cone becomes a near miss.
