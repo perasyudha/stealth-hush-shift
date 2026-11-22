@@ -355,15 +355,23 @@ function paintKey(ctx, world) {
   const k = world.keyTile;
   if (world.hasKey) return;
   const cx = k.x * TILE;
-  const bob = Math.sin(world.clock * 2.1) * 3;
+  const pulse = 0.5 + 0.5 * Math.sin(world.clock * 0.9);
+  const bob = Math.sin(world.clock * 0.9) * 2.6;
   const cy = k.y * TILE + bob;
   ctx.save();
   const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 46);
-  glow.addColorStop(0, 'rgba(244,196,85,0.5)');
-  glow.addColorStop(0.5, 'rgba(244,196,85,0.14)');
+  glow.addColorStop(0, `rgba(244,196,85,${0.4 + pulse * 0.18})`);
+  glow.addColorStop(0.5, `rgba(244,196,85,${0.11 + pulse * 0.06})`);
   glow.addColorStop(1, 'rgba(244,196,85,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(cx - 48, cy - 48, 96, 96);
+
+  // One slow brass ring per beat: the key breathes instead of blinking.
+  ctx.strokeStyle = `rgba(244,196,85,${0.1 + pulse * 0.16})`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 19 + pulse * 9, 0, Math.PI * 2);
+  ctx.stroke();
 
   ctx.translate(cx, cy);
   ctx.rotate(-0.3);
@@ -399,13 +407,20 @@ function paintExit(ctx, world) {
   const e = world.exitTile;
   const cx = e.x * TILE;
   const cy = e.y * TILE;
-  const pulse = 0.5 + 0.5 * Math.sin(world.clock * 2.4);
+  const pulse = 0.5 + 0.5 * Math.sin(world.clock * 0.8);
   ctx.save();
   const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, 46);
-  glow.addColorStop(0, `rgba(65,220,176,${0.4 + pulse * 0.14})`);
+  glow.addColorStop(0, `rgba(65,220,176,${0.3 + pulse * 0.2})`);
   glow.addColorStop(1, 'rgba(65,220,176,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(cx - 48, cy - 48, 96, 96);
+
+  // The same slow beat as the key, in teal: the way out is alive too.
+  ctx.strokeStyle = `rgba(65,220,176,${0.09 + pulse * 0.15})`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 21 + pulse * 8, 0, Math.PI * 2);
+  ctx.stroke();
 
   ctx.fillStyle = '#0c1f1c';
   rr(ctx, cx - 15, cy - 15, 30, 30, 4);
@@ -507,4 +522,18 @@ export function paintLightmap(ctx, world) {
 
   ctx.drawImage(lightCanvas, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
+}
+
+// A slight darkening at the canvas edge: the floor sits in a room, not on a page.
+export function paintVignette(ctx) {
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.46, w / 2, h / 2, Math.hypot(w, h) * 0.6);
+  grad.addColorStop(0, 'rgba(3,5,9,0)');
+  grad.addColorStop(0.62, 'rgba(3,5,9,0.06)');
+  grad.addColorStop(1, 'rgba(3,5,9,0.22)');
+  ctx.save();
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
 }

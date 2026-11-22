@@ -132,6 +132,42 @@ const LEGEND = [
   [ring, 'NOISE RADIUS'],
 ];
 
+// A small chip: glyph, then name, then the tint of the thing it names.
+function chip(ctx, glyph, label, x, y, tint) {
+  ctx.save();
+  ctx.font = `600 8.5px ${MONO}`;
+  const w = Math.round(22 + ctx.measureText(label).width + 8);
+  ctx.fillStyle = 'rgba(255,255,255,0.055)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, 16, 3);
+  ctx.fill();
+  ctx.fillStyle = tint;
+  ctx.fillRect(x, y, 3, 16);
+  ctx.save();
+  ctx.translate(x + 12, y + 8);
+  ctx.scale(0.72, 0.72);
+  glyph(ctx, 0, 0);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(214,226,238,0.9)';
+  ctx.fillText(label, x + 21, y + 11.4);
+  ctx.restore();
+  return w;
+}
+
+function routeChip(ctx, route, x, y) {
+  ctx.save();
+  ctx.font = `500 8.5px ${MONO}`;
+  const w = Math.round(12 + ctx.measureText(route.label).width);
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(x, y, w, 16);
+  ctx.fillStyle = route.tint;
+  ctx.fillRect(x, y, 3, 16);
+  ctx.fillStyle = PAL.dim;
+  ctx.fillText(route.label, x + 9, y + 11.4);
+  ctx.restore();
+  return w;
+}
+
 function drawTopStrip(ctx, world) {
   ctx.save();
   ctx.fillStyle = '#0a0f16';
@@ -159,19 +195,13 @@ function drawTopStrip(ctx, world) {
     ];
   mixed(ctx, objective, 430, 30, 11.5);
 
+  // Under the objective: what the floor is made of (cover, key, exit), then the three ways in.
   let chipX = 430;
-  ctx.save();
-  ctx.font = `500 9px ${MONO}`;
-  for (const route of Object.values(ROUTES)) {
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    ctx.fillRect(chipX, 40, 112, 16);
-    ctx.fillStyle = route.tint;
-    ctx.fillRect(chipX, 40, 3, 16);
-    ctx.fillStyle = PAL.dim;
-    ctx.fillText(route.label, chipX + 9, 51.5);
-    chipX += 118;
-  }
-  ctx.restore();
+  const chipY = 40;
+  chipX += chip(ctx, crate, 'COVER', chipX, chipY, PAL.crate) + 7;
+  chipX += chip(ctx, diamond, 'VAULT KEY', chipX, chipY, PAL.key) + 7;
+  chipX += chip(ctx, door, 'EXIT', chipX, chipY, PAL.teal) + 16;
+  for (const route of Object.values(ROUTES)) chipX += routeChip(ctx, route, chipX, chipY) + 6;
 
   // Awareness meter, with the 60% line marked: past it a cone becomes a near miss.
   const barX = 966;
@@ -192,6 +222,10 @@ function drawTopStrip(ctx, world) {
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.07)';
   ctx.fillRect(barX, barY, barW, barH);
+  // The far side of 60 is the danger zone: shade it before the fill goes on.
+  const tick = barX + barW * (AWARE.nearMiss / 100);
+  ctx.fillStyle = 'rgba(238,91,65,0.07)';
+  ctx.fillRect(tick, barY, barX + barW - tick, barH);
   const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
   if (world.awareness >= AWARE.nearMiss) {
     grad.addColorStop(0, '#f0c052');
@@ -202,13 +236,21 @@ function drawTopStrip(ctx, world) {
   }
   ctx.fillStyle = grad;
   ctx.fillRect(barX, barY, barW * (world.awareness / 100), barH);
-  const tick = barX + barW * (AWARE.nearMiss / 100);
-  ctx.strokeStyle = 'rgba(238,91,65,0.85)';
-  ctx.lineWidth = 1.5;
+
+  // The 60% threshold: a bright tick with a caret, the line a near miss starts at.
+  ctx.strokeStyle = 'rgba(238,91,65,0.9)';
+  ctx.lineWidth = 1.6;
   ctx.beginPath();
   ctx.moveTo(tick, barY - 3);
   ctx.lineTo(tick, barY + barH + 3);
   ctx.stroke();
+  ctx.fillStyle = 'rgba(238,91,65,0.95)';
+  ctx.beginPath();
+  ctx.moveTo(tick, barY - 2);
+  ctx.lineTo(tick - 3.4, barY - 7.5);
+  ctx.lineTo(tick + 3.4, barY - 7.5);
+  ctx.closePath();
+  ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.22)';
   ctx.strokeRect(barX, barY, barW, barH);
   ctx.fillStyle = 'rgba(238,91,65,0.85)';
