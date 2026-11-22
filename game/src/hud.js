@@ -1,6 +1,6 @@
 // The HUD lives in two letterbox strips, so nothing ever covers the floor:
 // top strip for objective, awareness and status, bottom strip for the legend.
-import { AWARE, HUD_BOTTOM, HUD_TOP, ROUTES, STANCE_LABEL, VIEW_H, VIEW_W } from './config.js';
+import { AWARE, HUD_BOTTOM, HUD_TOP, STANCE_LABEL, VIEW_H, VIEW_W } from './config.js';
 import { PAL } from './art.js';
 import { routeLabel } from './shots.js';
 
@@ -47,7 +47,7 @@ function crate(ctx, x, y) {
   ctx.lineWidth = 1.4;
   ctx.fillRect(x - 6, y - 6, 12, 12);
   ctx.strokeRect(x - 6, y - 6, 12, 12);
-  ctx.strokeStyle = 'rgba(20,14,6,0.55)';
+  ctx.strokeStyle = 'rgba(10,16,24,0.55)';
   ctx.beginPath();
   ctx.moveTo(x - 6, y);
   ctx.lineTo(x + 6, y);
@@ -124,10 +124,10 @@ function ring(ctx, x, y) {
 }
 
 const LEGEND = [
-  [crate, 'COVER · stops a cone'],
-  [diamond, 'GOLD VAULT KEY'],
+  [crate, 'COVER · blocks cones'],
+  [diamond, 'GOLD KEY'],
   [door, 'TEAL EXIT'],
-  [camera, 'CEILING CAMERA · sees over cover'],
+  [camera, 'CAMERA · sees over cover'],
   [cone, 'VISION CONE'],
   [ring, 'NOISE RADIUS'],
 ];
@@ -150,20 +150,6 @@ function chip(ctx, glyph, label, x, y, tint) {
   ctx.restore();
   ctx.fillStyle = 'rgba(214,226,238,0.9)';
   ctx.fillText(label, x + 21, y + 11.4);
-  ctx.restore();
-  return w;
-}
-
-function routeChip(ctx, route, x, y) {
-  ctx.save();
-  ctx.font = `500 8.5px ${MONO}`;
-  const w = Math.round(12 + ctx.measureText(route.label).width);
-  ctx.fillStyle = 'rgba(255,255,255,0.04)';
-  ctx.fillRect(x, y, w, 16);
-  ctx.fillStyle = route.tint;
-  ctx.fillRect(x, y, 3, 16);
-  ctx.fillStyle = PAL.dim;
-  ctx.fillText(route.label, x + 9, y + 11.4);
   ctx.restore();
   return w;
 }
@@ -195,21 +181,13 @@ function drawTopStrip(ctx, world) {
     ];
   mixed(ctx, objective, 430, 30, 11.5);
 
-  // Under the objective: what the floor is made of (cover, key, exit), then the three ways in.
+  // Under the objective: what the floor is made of. The route names live on the floor
+  // itself, so the top row never repeats them.
   let chipX = 430;
   const chipY = 40;
   chipX += chip(ctx, crate, 'COVER', chipX, chipY, PAL.crate) + 7;
   chipX += chip(ctx, diamond, 'VAULT KEY', chipX, chipY, PAL.key) + 7;
-  chipX += chip(ctx, door, 'EXIT', chipX, chipY, PAL.teal) + 16;
-  // A hairline splits what the floor is made of from the ways through it.
-  ctx.save();
-  ctx.strokeStyle = 'rgba(150,180,210,0.18)';
-  ctx.beginPath();
-  ctx.moveTo(chipX - 9.5, chipY + 2);
-  ctx.lineTo(chipX - 9.5, chipY + 14);
-  ctx.stroke();
-  ctx.restore();
-  for (const route of Object.values(ROUTES)) chipX += routeChip(ctx, route, chipX, chipY) + 6;
+  chip(ctx, door, 'EXIT', chipX, chipY, PAL.teal);
 
   // Awareness meter, with the 60% line marked: past it a cone becomes a near miss.
   const barX = 966;
@@ -282,39 +260,33 @@ function drawTopStrip(ctx, world) {
 
 function drawBottomStrip(ctx, world) {
   const y0 = ctx.canvas.height - HUD_BOTTOM;
+  const mid = y0 + HUD_BOTTOM / 2;
   ctx.save();
   ctx.fillStyle = '#0a0f16';
   ctx.fillRect(0, y0, ctx.canvas.width, HUD_BOTTOM);
   ctx.restore();
   rule(ctx, y0);
 
+  // One legend line, high contrast: glyph, name, hairline, glyph, name.
   let x = 22;
   ctx.save();
-  ctx.font = `500 10px ${MONO}`;
-  for (const [glyph, title] of LEGEND) {
-    glyph(ctx, x, y0 + 22);
-    ctx.fillStyle = 'rgba(190,206,222,0.92)';
-    ctx.fillText(title, x + 16, y0 + 25);
-    x += ctx.measureText(title).width + 22;
-    if (x < 900) {
-      ctx.fillStyle = 'rgba(150,180,210,0.3)';
-      ctx.fillText('|', x, y0 + 25);
-      x += 22;
-    } else {
-      x += 24;
+  ctx.font = `600 10.5px ${MONO}`;
+  ctx.textBaseline = 'alphabetic';
+  LEGEND.forEach(([glyph, title], index) => {
+    if (index > 0) {
+      ctx.fillStyle = 'rgba(176,204,232,0.42)';
+      ctx.fillText('|', x - 4, mid + 4);
+      x += 14;
     }
-  }
-  ctx.strokeStyle = 'rgba(150,180,210,0.18)';
-  ctx.beginPath();
-  ctx.moveTo(x - 8, y0 + 12);
-  ctx.lineTo(x - 8, y0 + 32);
-  ctx.stroke();
+    glyph(ctx, x, mid);
+    ctx.fillStyle = 'rgba(234,243,251,0.97)';
+    ctx.fillText(title, x + 16, mid + 4);
+    x += ctx.measureText(title).width + 30;
+  });
   ctx.restore();
 
   text(ctx, 'WASD move · SHIFT sprint (loud) · CTRL crouch (quiet) · R restart',
-    ctx.canvas.width - 22, y0 + 25, PAL.dim, 10, MONO, 'right');
-  text(ctx, 'Gold light marks the vault key, teal light marks the exit; crossed sight lines raise the alarm.',
-    22, y0 + 50, 'rgba(133,149,166,0.72)', 10, MONO);
+    ctx.canvas.width - 22, mid + 4, 'rgba(198,214,230,0.92)', 10.5, MONO, 'right');
 
   if (world.phase === 'caught') {
     card(ctx, PAL.alert, 'CAUGHT', [
