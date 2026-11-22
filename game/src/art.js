@@ -614,11 +614,12 @@ export function paintLamps(ctx, world) {
   for (const lamp of world.lamps) {
     const cx = lamp.x * TILE;
     const cy = lamp.y * TILE;
-    const pool = LIGHT.radius * TILE * 1.3;
+    // The pool is drawn exactly as far as the rule reaches: the rim is the lit area.
+    const pool = LIGHT.radius * TILE;
     const grad = ctx.createRadialGradient(cx, cy, 3, cx, cy, pool);
-    grad.addColorStop(0, 'rgba(255,201,130,0.245)');
-    grad.addColorStop(0.4, 'rgba(255,186,110,0.135)');
-    grad.addColorStop(0.72, 'rgba(246,170,96,0.055)');
+    grad.addColorStop(0, 'rgba(255,201,130,0.3)');
+    grad.addColorStop(0.42, 'rgba(255,186,110,0.165)');
+    grad.addColorStop(0.74, 'rgba(246,170,96,0.06)');
     grad.addColorStop(1, 'rgba(240,164,92,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -678,7 +679,7 @@ export function paintLightmap(ctx, world) {
   for (const g of world.guards) hole(g.x, g.y, 74, 0.4);
   hole(world.camera.x, world.camera.y, 56, 0.3);
   // Lamps lift the night overlay too, so the pool reads as light on the floor, not paint.
-  for (const lamp of world.lamps) hole(lamp.x, lamp.y, LIGHT.radius * TILE * 1.25, 0.42);
+  for (const lamp of world.lamps) hole(lamp.x, lamp.y, LIGHT.radius * TILE, 0.4);
 
   ctx.drawImage(lightCanvas, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
