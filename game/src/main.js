@@ -1,11 +1,11 @@
 // Entry point: build the floor, run the frame loop, and hand events to sound and HUD.
-import { AWARE } from './config.js';
+import { AWARE, CANVAS_H, CANVAS_W, HUD_TOP } from './config.js';
 import { createState } from './state.js';
 import { bindInput, readMove } from './input.js';
 import { updatePlayer } from './player.js';
 import { updateGuards } from './patrol.js';
 import { updateVision } from './vision.js';
-import { paintFloor, paintProps, paintLightmap } from './art.js';
+import { paintFloor, paintPatrolPaths, paintProps, paintLightmap } from './art.js';
 import {
   drawCamera,
   drawCameraCone,
@@ -30,6 +30,8 @@ import {
 import { applyPose } from './shots.js';
 
 const canvas = document.getElementById('floor');
+canvas.width = CANVAS_W;
+canvas.height = CANVAS_H;
 const ctx = canvas.getContext('2d');
 const pose = new URLSearchParams(location.search).get('shot');
 
@@ -76,7 +78,10 @@ function tick(dt) {
 }
 
 function draw() {
+  ctx.save();
+  ctx.translate(0, HUD_TOP);
   paintFloor(ctx, world);
+  paintPatrolPaths(ctx);
   paintProps(ctx, world);
   paintLightmap(ctx, world);
 
@@ -87,6 +92,8 @@ function draw() {
   for (const guard of world.guards) drawGuard(ctx, guard);
   drawNoise(ctx, world);
   drawPlayer(ctx, world);
+  ctx.restore();
+
   drawEffects(ctx, world);
   drawHud(ctx, world);
 }

@@ -1,21 +1,21 @@
 // The still parts of the floor: tiles, walls, crates, desks, pillars, vent grates,
 // the gold key, the teal exit door, door jambs, stencils, and the night light map.
-import { COLS, ROWS, TILE, VIEW_H, VIEW_W, ROUTES } from './config.js';
+import { COLS, GUARDS, ROWS, TILE, VIEW_H, VIEW_W, ROUTES } from './config.js';
 import { DOORS, MAP } from './config.js';
 import { isCover, isVent, isWall } from './level.js';
 
 export const PAL = {
   ink: '#070a0f',
-  floorA: '#151b23',
-  floorB: '#121821',
+  floorA: '#121924',
+  floorB: '#0f141d',
   vaultA: '#1e1a15',
   vaultB: '#1a1712',
   serviceA: '#131a1c',
   serviceB: '#101617',
   vent: '#0b1015',
-  wall: '#1a222c',
-  wallTop: '#2b3644',
-  wallEdge: 'rgba(160,190,215,0.10)',
+  wall: '#232c39',
+  wallTop: '#3a4657',
+  wallEdge: 'rgba(180,210,235,0.16)',
   crate: '#7d6435',
   crateDark: '#5a4726',
   crateEdge: '#9c8047',
@@ -104,6 +104,39 @@ export function paintFloor(ctx, world) {
       ctx.stroke();
     }
   }
+  ctx.restore();
+}
+
+// Faint dotted patrol lines: the route a guard walks is learnable from the floor.
+export function paintPatrolPaths(ctx) {
+  ctx.save();
+  for (const guard of GUARDS) {
+    const tint = ROUTES[guard.route]?.tint ?? '#9fc0e6';
+    ctx.strokeStyle = tint;
+    ctx.globalAlpha = 0.22;
+    ctx.setLineDash([4, 9]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    guard.path.forEach(([x, y], index) => {
+      if (index === 0) ctx.moveTo(x * TILE, y * TILE);
+      else ctx.lineTo(x * TILE, y * TILE);
+    });
+    ctx.closePath();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function paintDoorMat(ctx, x, y) {
+  const px = x * TILE;
+  const py = y * TILE;
+  ctx.save();
+  ctx.fillStyle = 'rgba(140,190,225,0.12)';
+  ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
+  ctx.strokeStyle = 'rgba(160,205,235,0.3)';
+  ctx.setLineDash([3, 4]);
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(px + 6.5, py + 6.5, TILE - 13, TILE - 13);
   ctx.restore();
 }
 
@@ -217,13 +250,21 @@ function paintVent(ctx, x, y) {
     ctx.lineTo(px + TILE - 3, ly);
     ctx.stroke();
   }
-  ctx.strokeStyle = PAL.ventLip;
+  ctx.strokeStyle = 'rgba(150,190,220,0.5)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(px, py + 2);
-  ctx.lineTo(px + TILE, py + 2);
-  ctx.moveTo(px, py + TILE - 2);
-  ctx.lineTo(px + TILE, py + TILE - 2);
+  ctx.moveTo(px, py + 3);
+  ctx.lineTo(px + TILE, py + 3);
+  ctx.moveTo(px, py + TILE - 3);
+  ctx.lineTo(px + TILE, py + TILE - 3);
   ctx.stroke();
+  ctx.fillStyle = 'rgba(150,190,220,0.28)';
+  ctx.beginPath();
+  ctx.moveTo(px + 26, py + 13);
+  ctx.lineTo(px + 32, py + 18);
+  ctx.lineTo(px + 26, py + 23);
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
 }
 
@@ -290,11 +331,11 @@ function paintExit(ctx, world) {
   const cy = e.y * TILE;
   const pulse = 0.5 + 0.5 * Math.sin(world.clock * 2.4);
   ctx.save();
-  const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, 62);
-  glow.addColorStop(0, `rgba(65,220,176,${0.34 + pulse * 0.12})`);
+  const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, 46);
+  glow.addColorStop(0, `rgba(65,220,176,${0.4 + pulse * 0.14})`);
   glow.addColorStop(1, 'rgba(65,220,176,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(cx - 64, cy - 64, 128, 128);
+  ctx.fillRect(cx - 48, cy - 48, 96, 96);
 
   ctx.fillStyle = '#0c1f1c';
   rr(ctx, cx - 15, cy - 15, 30, 30, 4);
@@ -341,15 +382,18 @@ export function paintProps(ctx, world) {
       else if (isVent(ch)) paintVent(ctx, x, y);
     }
   }
-  for (const door of DOORS) paintDoorJamb(ctx, door.x, door.y);
+  for (const door of DOORS) {
+    paintDoorMat(ctx, door.x, door.y);
+    paintDoorJamb(ctx, door.x, door.y);
+  }
   paintKey(ctx, world);
   paintExit(ctx, world);
 
   // Route stencils on the floor name the three ways in, so the plan reads at a glance.
-  stencil(ctx, 'FRONT HALL', 12 * TILE + 4, 4 * TILE + 26, 'rgba(159,192,230,0.35)', 11);
-  stencil(ctx, 'SERVICE RUN', 17 * TILE + 2, 18 * TILE + 27, 'rgba(230,180,159,0.32)', 11);
-  stencil(ctx, 'VENT CRAWL', 5 * TILE + 4, 11 * TILE + 26, 'rgba(159,230,205,0.38)', 11);
-  stencil(ctx, 'VAULT', 25 * TILE + 6, 13 * TILE + 26, 'rgba(244,196,85,0.35)', 11);
+  stencil(ctx, 'FRONT HALL', 12 * TILE + 4, 4 * TILE + 26, 'rgba(159,192,230,0.55)', 12);
+  stencil(ctx, 'SERVICE RUN', 17 * TILE + 2, 18 * TILE + 27, 'rgba(230,180,159,0.5)', 12);
+  stencil(ctx, 'VENT CRAWL', 5 * TILE + 4, 11 * TILE + 26, 'rgba(159,230,205,0.6)', 12);
+  stencil(ctx, 'VAULT', 25 * TILE + 6, 13 * TILE + 26, 'rgba(244,196,85,0.55)', 12);
 }
 
 let lightCanvas = null;
@@ -379,11 +423,11 @@ export function paintLightmap(ctx, world) {
   };
 
   const p = world.player;
-  hole(p.x, p.y, 150, 0.9);
+  hole(p.x, p.y, 145, 0.9);
   hole(world.keyTile.x, world.keyTile.y, 120, world.hasKey ? 0.2 : 0.85);
   hole(world.exitTile.x, world.exitTile.y, 150, 0.85);
-  for (const g of world.guards) hole(g.x, g.y, 110, 0.55);
-  hole(world.camera.x, world.camera.y, 90, 0.4);
+  for (const g of world.guards) hole(g.x, g.y, 74, 0.4);
+  hole(world.camera.x, world.camera.y, 56, 0.3);
 
   ctx.drawImage(lightCanvas, 0, 0);
   ctx.globalCompositeOperation = 'source-over';

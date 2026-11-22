@@ -1,59 +1,53 @@
-// The HUD: objective, awareness, legend, stance readout, and the two end cards.
-import { AWARE, ROUTES, STANCE_LABEL, TILE } from './config.js';
+// The HUD lives in two letterbox strips, so nothing ever covers the floor:
+// top strip for objective, awareness and status, bottom strip for the legend.
+import { AWARE, HUD_BOTTOM, HUD_TOP, ROUTES, STANCE_LABEL, VIEW_H, VIEW_W } from './config.js';
 import { PAL } from './art.js';
 import { routeLabel } from './shots.js';
 
 const MONO = 'ui-monospace, "SF Mono", Menlo, monospace';
 const SANS = 'ui-sans-serif, system-ui, -apple-system, sans-serif';
 
-function panel(ctx, x, y, w, h, alpha = 0.82) {
-  ctx.save();
-  ctx.fillStyle = `rgba(8,12,18,${alpha})`;
-  ctx.strokeStyle = 'rgba(150,180,210,0.16)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  const r = 8;
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
-function label(ctx, text, x, y, color = PAL.dim, size = 10, font = MONO) {
+function text(ctx, value, x, y, color, size, font = SANS, align = 'left') {
   ctx.save();
   ctx.fillStyle = color;
   ctx.font = `600 ${size}px ${font}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(text, x, y);
+  ctx.textAlign = align;
+  ctx.fillText(value, x, y);
   ctx.restore();
 }
 
-function mixed(ctx, parts, x, y, size = 13) {
+function mixed(ctx, parts, x, y, size) {
   ctx.save();
   ctx.font = `500 ${size}px ${SANS}`;
   ctx.textAlign = 'left';
   let cursor = x;
-  for (const [text, color] of parts) {
+  for (const [value, color] of parts) {
     ctx.fillStyle = color;
-    ctx.fillText(text, cursor, y);
-    cursor += ctx.measureText(text).width;
+    ctx.fillText(value, cursor, y);
+    cursor += ctx.measureText(value).width;
   }
   ctx.restore();
 }
 
-function swatchCrate(ctx, x, y) {
+function rule(ctx, y) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(150,180,210,0.14)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, y + 0.5);
+  ctx.lineTo(ctx.canvas.width, y + 0.5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function crate(ctx, x, y) {
   ctx.save();
   ctx.fillStyle = PAL.crate;
   ctx.strokeStyle = PAL.crateEdge;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.4;
   ctx.fillRect(x - 6, y - 6, 12, 12);
   ctx.strokeRect(x - 6, y - 6, 12, 12);
-  ctx.strokeStyle = 'rgba(20,14,6,0.5)';
+  ctx.strokeStyle = 'rgba(20,14,6,0.55)';
   ctx.beginPath();
   ctx.moveTo(x - 6, y);
   ctx.lineTo(x + 6, y);
@@ -61,7 +55,7 @@ function swatchCrate(ctx, x, y) {
   ctx.restore();
 }
 
-function swatchKey(ctx, x, y) {
+function diamond(ctx, x, y) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(-0.3);
@@ -76,21 +70,21 @@ function swatchKey(ctx, x, y) {
   ctx.restore();
 }
 
-function swatchDoor(ctx, x, y) {
+function door(ctx, x, y) {
   ctx.save();
-  ctx.strokeStyle = PAL.exit;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x - 6, y - 7, 12, 14);
   ctx.fillStyle = 'rgba(65,220,176,0.22)';
   ctx.fillRect(x - 6, y - 7, 12, 14);
+  ctx.strokeStyle = PAL.exit;
+  ctx.lineWidth = 1.8;
+  ctx.strokeRect(x - 6, y - 7, 12, 14);
   ctx.restore();
 }
 
-function swatchCamera(ctx, x, y) {
+function camera(ctx, x, y) {
   ctx.save();
   ctx.fillStyle = '#2c3948';
   ctx.strokeStyle = '#9fd4ff';
-  ctx.lineWidth = 1.4;
+  ctx.lineWidth = 1.3;
   ctx.beginPath();
   ctx.moveTo(x - 7, y - 5);
   ctx.lineTo(x + 3, y - 7);
@@ -103,12 +97,13 @@ function swatchCamera(ctx, x, y) {
   ctx.restore();
 }
 
-function swatchCone(ctx, x, y) {
+function cone(ctx, x, y) {
   ctx.save();
-  ctx.fillStyle = 'rgba(255,193,124,0.35)';
-  ctx.strokeStyle = 'rgba(255,205,150,0.7)';
+  ctx.fillStyle = 'rgba(255,193,124,0.32)';
+  ctx.strokeStyle = 'rgba(255,205,150,0.75)';
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(x - 7, y + 6);
+  ctx.moveTo(x - 6, y + 6);
   ctx.lineTo(x + 7, y - 7);
   ctx.lineTo(x + 7, y + 6);
   ctx.closePath();
@@ -117,195 +112,137 @@ function swatchCone(ctx, x, y) {
   ctx.restore();
 }
 
-function swatchNoise(ctx, x, y) {
+function ring(ctx, x, y) {
   ctx.save();
-  ctx.strokeStyle = 'rgba(226,236,246,0.5)';
+  ctx.strokeStyle = 'rgba(226,236,246,0.55)';
   ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
   ctx.arc(x, y, 6, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 }
 
-function legendRow(ctx, items, y) {
-  let x = 40;
-  for (const [glyph, text] of items) {
-    glyph(ctx, x, y - 3);
-    label(ctx, text, x + 14, y, PAL.dim, 10.5);
-    x += ctx.measureText(text).width + 46;
+const LEGEND = [
+  [crate, 'COVER · stops a cone'],
+  [diamond, 'GOLD VAULT KEY'],
+  [door, 'TEAL EXIT'],
+  [camera, 'CEILING CAMERA · sees over cover'],
+  [cone, 'VISION CONE'],
+  [ring, 'NOISE RADIUS'],
+];
+
+function drawTopStrip(ctx, world) {
+  ctx.save();
+  ctx.fillStyle = '#0a0f16';
+  ctx.fillRect(0, 0, ctx.canvas.width, HUD_TOP);
+  ctx.restore();
+  rule(ctx, HUD_TOP - 1);
+
+  text(ctx, 'HUSH SHIFT', 22, 32, PAL.text, 20, SANS);
+  text(ctx, 'ONE FLOOR · THREE WAYS TO THE GOLD VAULT KEY', 22, 52, PAL.dim, 9.5, MONO);
+
+  const objective = world.hasKey
+    ? [
+      ['OBJECTIVE  ', PAL.dim],
+      ['key in hand · reach the ', PAL.text],
+      ['TEAL EXIT', PAL.teal],
+      [' unseen', PAL.text],
+    ]
+    : [
+      ['OBJECTIVE  ', PAL.dim],
+      ['grab the ', PAL.text],
+      ['GOLD VAULT KEY', PAL.gold],
+      [' in the vault, then the ', PAL.text],
+      ['TEAL EXIT', PAL.teal],
+      [' unseen', PAL.text],
+    ];
+  mixed(ctx, objective, 430, 30, 11.5);
+
+  let chipX = 430;
+  ctx.save();
+  ctx.font = `500 9px ${MONO}`;
+  for (const route of Object.values(ROUTES)) {
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(chipX, 40, 112, 16);
+    ctx.fillStyle = route.tint;
+    ctx.fillRect(chipX, 40, 3, 16);
+    ctx.fillStyle = PAL.dim;
+    ctx.fillText(route.label, chipX + 9, 51.5);
+    chipX += 118;
   }
-}
+  ctx.restore();
 
-function objective(world) {
-  const key = world.hasKey ? 'in hand' : 'in the vault';
-  return [
-    ['OBJECTIVE  ', PAL.dim],
-    ['take the ', PAL.text],
-    ['GOLD VAULT KEY', PAL.gold],
-    [' (' + key + '), then ', PAL.text],
-    ['TEAL EXIT', PAL.teal],
-    [' unseen', PAL.text],
-  ];
-}
-
-function drawAwareness(ctx, world) {
-  const x = 958;
-  const y = 14;
-  const w = 306;
-  const h = 86;
-  panel(ctx, x, y, w, h);
-  label(ctx, world.hidden ? 'HIDDEN · METER DRAINING' : 'AWARENESS', x + 16, y + 24,
-    world.hidden ? PAL.teal : PAL.dim, 10);
-
-  const barX = x + 16;
-  const barY = y + 34;
-  const barW = w - 32;
-  const barH = 16;
+  // Awareness meter, with the 60% line marked: past it a cone becomes a near miss.
+  const barX = 966;
+  const barW = 292;
+  const barY = 22;
+  const barH = 14;
+  text(ctx, world.hidden ? 'HIDDEN · METER DRAINING' : 'AWARENESS', barX, barY - 4,
+    world.hidden ? PAL.teal : PAL.dim, 9.5, MONO);
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.07)';
   ctx.fillRect(barX, barY, barW, barH);
-
-  const pct = world.awareness / 100;
-  const fill = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+  const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
   if (world.awareness >= AWARE.nearMiss) {
-    fill.addColorStop(0, '#f0c052');
-    fill.addColorStop(1, '#ee5b41');
+    grad.addColorStop(0, '#f0c052');
+    grad.addColorStop(1, '#ee5b41');
   } else {
-    fill.addColorStop(0, '#4f8fbf');
-    fill.addColorStop(1, '#8fbfe0');
+    grad.addColorStop(0, '#4f8fbf');
+    grad.addColorStop(1, '#9fd0ec');
   }
-  ctx.fillStyle = fill;
-  ctx.fillRect(barX, barY, barW * pct, barH);
-
-  // 60% tick: the line that turns a look into a near miss.
-  const tickX = barX + barW * (AWARE.nearMiss / 100);
-  ctx.strokeStyle = 'rgba(238,91,65,0.8)';
+  ctx.fillStyle = grad;
+  ctx.fillRect(barX, barY, barW * (world.awareness / 100), barH);
+  const tick = barX + barW * (AWARE.nearMiss / 100);
+  ctx.strokeStyle = 'rgba(238,91,65,0.85)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(tickX, barY - 4);
-  ctx.lineTo(tickX, barY + barH + 4);
+  ctx.moveTo(tick, barY - 3);
+  ctx.lineTo(tick, barY + barH + 3);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(238,91,65,0.9)';
-  ctx.font = `600 9px ${MONO}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('NEAR MISS', tickX, barY + barH + 16);
-
-  ctx.fillStyle = PAL.text;
-  ctx.font = `700 12px ${MONO}`;
-  ctx.textAlign = 'right';
-  ctx.fillText(Math.round(world.awareness) + '%', barX + barW, barY + 12);
   ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-  ctx.lineWidth = 1;
   ctx.strokeRect(barX, barY, barW, barH);
-
-  const pace = STANCE_LABEL[world.stance] ?? 'WALK';
-  const secs = world.time;
-  const clock = `TIME ${String(Math.floor(secs / 60)).padStart(2, '0')}:${(secs % 60).toFixed(1).padStart(4, '0')}`;
-  ctx.fillStyle = PAL.dim;
-  ctx.font = `500 10.5px ${MONO}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(`${clock}   ·   ${pace}   ·   NOISE ${world.noise.toFixed(1)}m`, barX, barY + barH + 18);
+  ctx.fillStyle = PAL.text;
+  ctx.font = `700 11px ${MONO}`;
+  ctx.textAlign = 'right';
+  ctx.fillText(Math.round(world.awareness) + '%', barX + barW - 6, barY + 11);
   ctx.restore();
+
+  const mm = String(Math.floor(world.time / 60)).padStart(2, '0');
+  const ss = (world.time % 60).toFixed(1).padStart(4, '0');
+  const status = `TIME ${mm}:${ss}   ${STANCE_LABEL[world.stance] ?? 'WALK'}   NOISE ${world.noise.toFixed(1)}m`;
+  text(ctx, status, barX, 56, PAL.dim, 9.5, MONO);
 }
 
-function drawTitle(ctx, world) {
-  const x = 16;
-  const y = 14;
-  const w = 520;
-  const h = 86;
-  panel(ctx, x, y, w, h);
-
+function drawBottomStrip(ctx, world) {
+  const y0 = ctx.canvas.height - HUD_BOTTOM;
   ctx.save();
-  ctx.fillStyle = PAL.text;
-  ctx.font = `700 17px ${SANS}`;
-  ctx.textAlign = 'left';
-  ctx.fillText('HUSH SHIFT', x + 16, y + 26);
-  const width = ctx.measureText('HUSH SHIFT').width;
-  ctx.fillStyle = PAL.dim;
-  ctx.font = `500 9.5px ${MONO}`;
-  ctx.fillText('ONE FLOOR · THREE WAYS · NO ALARM', x + 26 + width, y + 26);
+  ctx.fillStyle = '#0a0f16';
+  ctx.fillRect(0, y0, ctx.canvas.width, HUD_BOTTOM);
   ctx.restore();
+  rule(ctx, y0);
 
-  mixed(ctx, objective(world), x + 16, y + 50, 12.5);
-
+  let x = 22;
   ctx.save();
   ctx.font = `500 10px ${MONO}`;
-  let chipX = x + 16;
-  for (const [name, route] of Object.entries(ROUTES)) {
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    ctx.fillRect(chipX, y + 60, 96, 16);
-    ctx.fillStyle = route.tint;
-    ctx.fillRect(chipX, y + 60, 3, 16);
-    ctx.fillStyle = PAL.dim;
-    ctx.fillText(route.label, chipX + 8, y + 71.5);
-    chipX += 102;
+  for (const [glyph, title] of LEGEND) {
+    glyph(ctx, x, y0 + 22);
+    ctx.fillStyle = 'rgba(180,196,212,0.85)';
+    ctx.fillText(title, x + 16, y0 + 25);
+    x += ctx.measureText(title).width + 46;
   }
-  ctx.fillStyle = PAL.dim;
-  ctx.fillText('WASD MOVE · SHIFT SPRINT · CTRL CROUCH · R RESTART', x + 16, y + 78);
   ctx.restore();
-}
 
-function drawLegend(ctx) {
-  const x = 16;
-  const y = 674;
-  const w = 520;
-  const h = 112;
-  panel(ctx, x, y, w, h);
-  label(ctx, 'LEGEND', x + 16, y + 20, PAL.dim, 10);
-  legendRow(ctx, [[swatchCrate, 'COVER · blocks sight'], [swatchKey, 'GOLD VAULT KEY'], [swatchDoor, 'TEAL EXIT']], y + 42);
-  legendRow(ctx, [[swatchCamera, 'CEILING CAMERA · sees over cover'], [swatchCone, 'VISION CONE'], [swatchNoise, 'NOISE RADIUS']], y + 68);
-  label(ctx, 'crates, desks and pillars stop a cone; the camera sweeps above them.', x + 16, y + 94, 'rgba(133,149,166,0.75)', 10);
-}
-
-function card(ctx, accent, title, lines, hint) {
-  const w = 640;
-  const h = 300;
-  const x = (ctx.canvas.width - w) / 2;
-  const y = (ctx.canvas.height - h) / 2;
-  ctx.save();
-  ctx.fillStyle = 'rgba(4,7,11,0.72)';
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  panel(ctx, x, y, w, h, 0.94);
-  ctx.fillStyle = accent;
-  ctx.fillRect(x, y + 18, 4, h - 36);
-
-  ctx.fillStyle = accent;
-  ctx.font = `800 44px ${SANS}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(title, x + 40, y + 78);
-
-  ctx.font = `500 14px ${SANS}`;
-  let ly = y + 118;
-  for (const line of lines) {
-    ctx.fillStyle = PAL.dim;
-    ctx.fillText(line, x + 40, ly);
-    ly += 26;
-  }
-
-  ctx.fillStyle = PAL.text;
-  ctx.font = `500 13px ${SANS}`;
-  ctx.fillText(hint, x + 40, y + h - 38);
-  ctx.restore();
-}
-
-export function drawHud(ctx, world) {
-  drawTitle(ctx, world);
-  drawAwareness(ctx, world);
-  drawLegend(ctx);
-
-  const x = 956;
-  const y = 112;
-  const w = 308;
-  panel(ctx, x, y, w, 54, 0.7);
-  label(ctx, 'GOLD KEY', x + 16, y + 20, PAL.dim, 9.5);
-  label(ctx, world.hasKey ? 'IN HAND — the teal exit is live' : 'IN THE VAULT (east wing)',
-    x + 16, y + 38, world.hasKey ? PAL.teal : PAL.gold, 10.5);
+  text(ctx, 'WASD move · SHIFT sprint (loud) · CTRL crouch (quiet) · R restart',
+    ctx.canvas.width - 22, y0 + 25, PAL.dim, 10, MONO, 'right');
+  text(ctx, 'Gold light marks the vault key, teal light marks the exit; crossed sight lines raise the alarm.',
+    22, y0 + 50, 'rgba(133,149,166,0.72)', 10, MONO);
 
   if (world.phase === 'caught') {
     card(ctx, PAL.alert, 'CAUGHT', [
       'The alarm went up and the floor lights came on.',
       `You were ${world.hasKey ? 'carrying the gold key' : 'still short of the vault'} after ${world.time.toFixed(1)}s.`,
-    ], 'Press R to run the floor again — try the other corridor.');
+    ], 'Press R to run the floor again, and try another corridor.');
     return;
   }
 
@@ -314,9 +251,50 @@ export function drawHud(ctx, world) {
     card(ctx, PAL.exit, 'CLEAN EXIT', [
       `Out with the gold vault key in ${world.time.toFixed(1)} seconds.`,
       `Route taken: ${routeLabel(world)}.`,
-      near === 0 ? 'No alarm raised, no cone ever reached you.' : `Near misses survived: ${near}.`,
+      near === 0 ? 'No alarm raised: no cone ever held you.' : `Near misses survived: ${near}.`,
     ], 'Press R to run another route through the same floor.');
   }
 }
 
-export { routeLabel };
+function card(ctx, accent, title, lines, hint) {
+  const w = 660;
+  const h = 288;
+  const x = (VIEW_W - w) / 2;
+  const y = HUD_TOP + (VIEW_H - h) / 2;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(4,7,11,0.74)';
+  ctx.fillRect(0, HUD_TOP, VIEW_W, VIEW_H);
+  ctx.fillStyle = 'rgba(10,15,22,0.97)';
+  ctx.strokeStyle = 'rgba(150,180,210,0.22)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = accent;
+  ctx.fillRect(x, y + 16, 4, h - 32);
+
+  ctx.fillStyle = accent;
+  ctx.font = `800 42px ${SANS}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(title, x + 36, y + 74);
+
+  ctx.font = `500 14px ${SANS}`;
+  let lineY = y + 116;
+  for (const line of lines) {
+    ctx.fillStyle = 'rgba(200,212,226,0.88)';
+    ctx.fillText(line, x + 36, lineY);
+    lineY += 26;
+  }
+
+  ctx.fillStyle = PAL.dim;
+  ctx.font = `500 12.5px ${SANS}`;
+  ctx.fillText(hint, x + 36, y + h - 34);
+  ctx.restore();
+}
+
+export function drawHud(ctx, world) {
+  drawTopStrip(ctx, world);
+  drawBottomStrip(ctx, world);
+}

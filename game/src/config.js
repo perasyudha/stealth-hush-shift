@@ -4,6 +4,11 @@ export const COLS = 32;
 export const ROWS = 20;
 export const VIEW_W = COLS * TILE;
 export const VIEW_H = ROWS * TILE;
+// The HUD lives in two letterbox strips, so the floor is never covered.
+export const HUD_TOP = 72;
+export const HUD_BOTTOM = 64;
+export const CANVAS_W = VIEW_W;
+export const CANVAS_H = HUD_TOP + VIEW_H + HUD_BOTTOM;
 
 // Legend: # wall, . floor, C crate, D desk, P pillar, v vent crawl,
 // L gold vault key, X teal exit door, s player start.

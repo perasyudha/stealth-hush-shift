@@ -62,7 +62,7 @@ export function wallBlocked(x0, y0, x1, y1) {
 }
 
 // Cone outline clipped per ray, so the drawn cone ends exactly where vision ends.
-export function conePolygon(x, y, angle, fovDeg, range, rays = 26) {
+export function conePolygon(x, y, angle, fovDeg, range, rays = 26, blocks = blocksSight) {
   const half = (fovDeg * Math.PI) / 360;
   const points = [{ x, y }];
   for (let i = 0; i <= rays; i++) {
@@ -70,9 +70,9 @@ export function conePolygon(x, y, angle, fovDeg, range, rays = 26) {
     const cos = Math.cos(a);
     const sin = Math.sin(a);
     let reach = range;
-    for (let s = 0.35; s <= range; s += 0.12) {
-      if (blocksSight(tileAt(Math.floor(x + cos * s), Math.floor(y + sin * s)))) {
-        reach = s;
+    for (let s = 0.3; s <= range; s += 0.09) {
+      if (blocks(tileAt(Math.floor(x + cos * s), Math.floor(y + sin * s)))) {
+        reach = Math.max(0.3, s - 0.09);
         break;
       }
     }

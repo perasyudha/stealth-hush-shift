@@ -1,7 +1,7 @@
 // The moving parts: guard bodies and their clipped cones, the ceiling camera, the player,
 // the noise ring, and the red near-miss edge.
 import { AWARE, TILE } from './config.js';
-import { conePolygon } from './level.js';
+import { conePolygon, isWall } from './level.js';
 import { PAL } from './art.js';
 
 function conePath(ctx, pts) {
@@ -33,23 +33,23 @@ export function drawGuardCone(ctx, g) {
 }
 
 export function drawCameraCone(ctx, cam) {
-  const pts = conePolygon(cam.x, cam.y, cam.angle, cam.fov, cam.range, 20);
+  const pts = conePolygon(cam.x, cam.y, cam.angle, cam.fov, cam.range, 20, isWall);
   const cx = cam.x * TILE;
   const cy = cam.y * TILE;
   const grad = ctx.createRadialGradient(cx, cy, 6, cx, cy, cam.range * TILE);
   const hot = cam.alert > 0.4;
   const base = hot ? '238,91,65' : '150,200,255';
-  grad.addColorStop(0, `rgba(${base},0.30)`);
-  grad.addColorStop(0.6, `rgba(${base},0.12)`);
+  grad.addColorStop(0, `rgba(${base},0.34)`);
+  grad.addColorStop(0.6, `rgba(${base},0.15)`);
   grad.addColorStop(1, `rgba(${base},0.01)`);
 
   ctx.save();
   conePath(ctx, pts);
   ctx.fillStyle = grad;
   ctx.fill();
-  ctx.strokeStyle = `rgba(${base},0.5)`;
-  ctx.setLineDash([7, 6]);
-  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = `rgba(${base},0.6)`;
+  ctx.setLineDash([9, 5]);
+  ctx.lineWidth = 1.6;
   ctx.stroke();
   ctx.restore();
 }
@@ -59,53 +59,59 @@ export function drawGuard(ctx, g) {
   const y = g.y * TILE;
   ctx.save();
 
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.beginPath();
-  ctx.ellipse(x + 2, y + 7, 13, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 2, y + 7, 14, 9, 0, 0, Math.PI * 2);
   ctx.fill();
 
   if (g.alert > 0.3) {
-    ctx.strokeStyle = `rgba(238,91,65,${0.25 + g.alert * 0.5})`;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(238,91,65,${0.3 + g.alert * 0.55})`;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.arc(x, y, 15 + g.alert * 3, 0, Math.PI * 2);
+    ctx.arc(x, y, 16 + g.alert * 3, 0, Math.PI * 2);
     ctx.stroke();
   }
-
-  const body = ctx.createRadialGradient(x - 4, y - 5, 2, x, y, 13);
-  body.addColorStop(0, '#f08a6c');
-  body.addColorStop(1, PAL.guard);
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.arc(x, y, 11.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(30,10,6,0.8)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Cap brim: the facing direction is readable even without the cone.
-  ctx.fillStyle = PAL.guardDark;
-  ctx.beginPath();
-  ctx.arc(x, y, 11.5, g.angle - (g.fov * Math.PI) / 360 * 0.5, g.angle + (g.fov * Math.PI) / 360 * 0.5);
-  ctx.lineTo(x, y);
-  ctx.closePath();
-  ctx.globalAlpha = 0.22;
-  ctx.fill();
-  ctx.globalAlpha = 1;
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(g.angle);
+
+  // Shoulders, then the head: a guard reads as a person, not a dot.
   ctx.fillStyle = PAL.guardDark;
   ctx.beginPath();
-  ctx.ellipse(4, 0, 6, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(-1, 0, 12, 9.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const body = ctx.createRadialGradient(0, -4, 2, 0, 0, 12);
+  body.addColorStop(0, '#f39a7b');
+  body.addColorStop(1, PAL.guard);
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.arc(1, 0, 9.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(30,10,6,0.85)';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  // Peak of the cap points the way the guard looks.
+  ctx.fillStyle = PAL.guardDark;
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(4, -6);
+  ctx.lineTo(4, 6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,240,230,0.85)';
+  ctx.beginPath();
+  ctx.arc(2, -2.5, 2.6, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  ctx.fillStyle = 'rgba(10,6,4,0.9)';
+  ctx.fillStyle = 'rgba(12,7,4,0.95)';
   ctx.font = '700 10px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(g.id, x, y + 3.5);
+  ctx.fillText(g.id, x - 1, y + 3.5);
   ctx.restore();
 }
 
@@ -144,8 +150,8 @@ export function drawCamera(ctx, cam) {
   ctx.restore();
 
   ctx.save();
-  ctx.fillStyle = 'rgba(160,205,255,0.7)';
-  ctx.font = '600 8px ui-monospace, Menlo, monospace';
+  ctx.fillStyle = 'rgba(180,215,255,0.85)';
+  ctx.font = '700 9px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'center';
   ctx.fillText('CAM', x, y + 26);
   ctx.restore();
@@ -173,7 +179,7 @@ export function drawPlayer(ctx, world) {
   ctx.ellipse(x + 1, y + 6, crouched ? 9 : 11, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const rad = crouched ? 8 : 10.5;
+  const rad = crouched ? 9 : 11.5;
   const body = ctx.createRadialGradient(x - 3, y - 4, 2, x, y, rad + 2);
   body.addColorStop(0, '#ffffff');
   body.addColorStop(1, PAL.player);
@@ -199,17 +205,17 @@ export function drawPlayer(ctx, world) {
   ctx.restore();
 
   if (world.hidden) {
-    ctx.strokeStyle = 'rgba(67,220,178,0.55)';
+    ctx.strokeStyle = 'rgba(196,255,238,0.7)';
     ctx.setLineDash([4, 4]);
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.arc(x, y, rad + 5, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(67,220,178,0.8)';
-    ctx.font = '600 9px ui-monospace, Menlo, monospace';
+    ctx.fillStyle = 'rgba(196,255,238,0.9)';
+    ctx.font = '700 10px ui-monospace, Menlo, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('HIDDEN', x, y - rad - 10);
+    ctx.fillText('HIDDEN', x, y - rad - 12);
   }
   ctx.restore();
 }
