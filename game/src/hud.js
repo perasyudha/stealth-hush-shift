@@ -124,12 +124,12 @@ function ring(ctx, x, y) {
 }
 
 const LEGEND = [
-  [crate, 'COVER · blocks cones'],
+  [crate, 'COVER · stops cone'],
   [diamond, 'GOLD KEY'],
   [door, 'TEAL EXIT'],
-  [camera, 'CAMERA · sees over cover'],
-  [cone, 'CONE · RAISES ALARM'],
-  [ring, 'NOISE RADIUS'],
+  [camera, 'CAMERA · over cover'],
+  [cone, 'CONE · ALARM'],
+  [ring, 'NOISE'],
 ];
 
 // A small chip: glyph, then name, then the tint of the thing it names.
@@ -258,34 +258,149 @@ function drawTopStrip(ctx, world) {
   text(ctx, status, barX, 56, PAL.dim, 9.5, MONO);
 }
 
+// Field notes: two glyph rows that teach the light rule, the second stealth axis.
+// A lamp means you are seen from three times as far; the dark floor is the safe state.
+function lampGlyph(ctx, x, y) {
+  ctx.save();
+  const halo = ctx.createRadialGradient(x, y, 1, x, y, 8);
+  halo.addColorStop(0, 'rgba(255,208,152,0.62)');
+  halo.addColorStop(1, 'rgba(255,190,120,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(x, y, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = PAL.key;
+  ctx.beginPath();
+  ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,214,164,0.55)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 2 + Math.PI / 4;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * 4.6, y + Math.sin(a) * 4.6);
+    ctx.lineTo(x + Math.cos(a) * 6.6, y + Math.sin(a) * 6.6);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function shadowGlyph(ctx, x, y) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(9,14,20,0.95)';
+  ctx.beginPath();
+  ctx.arc(x, y, 6.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.setLineDash([2, 2.6]);
+  ctx.strokeStyle = 'rgba(150,182,212,0.7)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.arc(x, y, 6.4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+const NOTES = [
+  [lampGlyph, [
+    ['LIT POOL', '#f6c78c'],
+    [' · VISIBILITY ×3 · CONES REACH', 'rgba(206,220,234,0.86)'],
+  ]],
+  [shadowGlyph, [
+    ['DARK FLOOR', '#8fe0c4'],
+    [' · SAFE · STAY UNLIT', 'rgba(206,220,234,0.86)'],
+  ]],
+];
+
+// Small caps, letter-spaced, tinted by term: the field notes read like a stencil, not a paragraph.
+function noteText(ctx, parts, x, y, size) {
+  ctx.save();
+  ctx.font = `600 ${size}px ${MONO}`;
+  ctx.textAlign = 'left';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0.6px';
+  let cursor = x;
+  for (const [value, color] of parts) {
+    ctx.fillStyle = color;
+    ctx.fillText(value, cursor, y);
+    cursor += ctx.measureText(value).width;
+  }
+  ctx.restore();
+}
+
+// Draws the legend in one line, shrinking the type until it fits the half strip.
+function drawLegend(ctx, x, y, maxX) {
+  let size = 9.5;
+  let width = Infinity;
+  for (; size >= 7.5; size -= 0.5) {
+    ctx.save();
+    ctx.font = `600 ${size}px ${MONO}`;
+    width = 0;
+    LEGEND.forEach(([, title], index) => {
+      if (index > 0) width += 12;
+      width += 17 + ctx.measureText(title).width;
+    });
+    ctx.restore();
+    if (x + width <= maxX) break;
+  }
+
+  ctx.save();
+  ctx.font = `600 ${size}px ${MONO}`;
+  let cursor = x;
+  LEGEND.forEach(([glyph, title], index) => {
+    if (index > 0) {
+      ctx.fillStyle = 'rgba(176,204,232,0.4)';
+      ctx.fillText('|', cursor - 5, y);
+      cursor += 12;
+    }
+    ctx.save();
+    ctx.translate(cursor + 6, y - 3.6);
+    ctx.scale(0.62, 0.62);
+    glyph(ctx, 0, 0);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(234,243,251,0.95)';
+    ctx.fillText(title, cursor + 16, y);
+    cursor += 17 + ctx.measureText(title).width;
+  });
+  ctx.restore();
+}
+
 function drawBottomStrip(ctx, world) {
   const y0 = ctx.canvas.height - HUD_BOTTOM;
-  const mid = y0 + HUD_BOTTOM / 2;
+  const w = ctx.canvas.width;
   ctx.save();
   ctx.fillStyle = '#0a0f16';
-  ctx.fillRect(0, y0, ctx.canvas.width, HUD_BOTTOM);
+  ctx.fillRect(0, y0, w, HUD_BOTTOM);
   ctx.restore();
   rule(ctx, y0);
 
-  // One legend line, high contrast: glyph, name, hairline, glyph, name.
-  let x = 22;
+  // Left half: the field notes. Two rows, icon then rule, small caps, no boxes.
   ctx.save();
-  ctx.font = `600 10.5px ${MONO}`;
-  LEGEND.forEach(([glyph, title], index) => {
-    if (index > 0) {
-      ctx.fillStyle = 'rgba(176,204,232,0.42)';
-      ctx.fillText('|', x - 4, mid + 4);
-      x += 14;
-    }
-    glyph(ctx, x, mid);
-    ctx.fillStyle = 'rgba(234,243,251,0.97)';
-    ctx.fillText(title, x + 16, mid + 4);
-    x += ctx.measureText(title).width + 30;
+  ctx.fillStyle = 'rgba(150,178,205,0.72)';
+  ctx.font = `700 8px ${MONO}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '1.6px';
+  ctx.fillText('FIELD NOTES', 22, y0 + 15);
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  ctx.restore();
+  NOTES.forEach(([glyph, parts], index) => {
+    const rowY = y0 + 33 + index * 18;
+    glyph(ctx, 32, rowY - 4);
+    noteText(ctx, parts, 46, rowY, 9);
   });
+
+  // Hairline between the notes and the legend: two columns, one strip.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(150,180,210,0.14)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(648.5, y0 + 12);
+  ctx.lineTo(648.5, y0 + HUD_BOTTOM - 12);
+  ctx.stroke();
   ctx.restore();
 
+  // Right half: still one legend line, plus the controls underneath.
+  drawLegend(ctx, 670, y0 + 32, w - 22);
   text(ctx, 'WASD move · SHIFT sprint (loud) · CTRL crouch (quiet) · R restart',
-    ctx.canvas.width - 22, mid + 4, 'rgba(198,214,230,0.92)', 10.5, MONO, 'right');
+    w - 22, y0 + 52, 'rgba(198,214,230,0.9)', 9.5, MONO, 'right');
 
   if (world.phase === 'caught') {
     card(ctx, PAL.alert, 'CAUGHT', [
